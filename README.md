@@ -49,7 +49,8 @@ A proposta substitui painéis convencionais de tabelas e logs monótonos por uma
 ## 🛠️ Stack Tecnológica
 
 * **Backend:** Rust (`axum 0.8`, `tokio 1.54`, `serde`, `tower-http`, `tracing`, `thiserror`)
-* **Frontend:** TypeScript, Phaser 3 (WebGL), Svelte/React HUD, Tailwind CSS
+* **Frontend UI / HUD:** Svelte 5, TypeScript, Tailwind CSS v4
+* **Motor Isométrico 2D:** Phaser 3 (WebGL)
 * **Pathfinding:** EasyStar.js / A* Isométrico (projeção 2:1)
 * **Gestão:** Task-Driven Development sincronizado com o Notion Workspace via API
 

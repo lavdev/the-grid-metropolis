@@ -123,7 +123,8 @@ A ponte permite conectar o mundo isométrico com serviços externos, tais como i
                     ▼
 ┌────────────────────────────────────────┐
 │      Client 2D Isométrico (Browser)    │
-│  - Renderização (Phaser / PixiJS)      │
+│  - UI & HUD Cyberpunk: Svelte 5 + TS   │
+│  - Renderização: Canvas Phaser 3       │
 │  - Pathfinding das Passarelas (A*)     │
 │  - Animação, Z-Sorting e Balões        │
 └────────────────────────────────────────┘
@@ -414,15 +415,15 @@ pub struct WebSocketEvent {
 
 ---
 
-## 9. Stack Técnica Completa & Justificativas
+## 9. Stack Técnica Oficial & Justificativas
 
-| Camada | Tecnologia Sugerida | Justificativa |
+| Camada | Tecnologia Oficial Adotada | Justificativa |
 | :--- | :--- | :--- |
-| **Renderizador 2D / Canvas** | **Phaser.js** ou **Pixi.js** | Motores com suporte maduro a WebGL, camadas de profundidade (*z-sorting* isométrico), sistemas de partículas para fumaça de néon e troca dinâmica de spritesheets. |
-| **Pathfinding Isométrico** | **EasyStar.js** ou **A\* Customizado** | Cálculo de rotas sobre a matriz de grid 2D sem travamentos, respeitando largura de passarelas, paredes e colisões. |
-| **Camada de Interface UI / HUD** | **Svelte (Vite + TypeScript)** | Reatividade compilada sem Virtual DOM (zero overhead sobre o WebGL), ciclo de vida limpo para instanciar o Canvas, animações nativas fluidas para HUD cyberpunk e bundle ultraleve. |
-| **Backend de Integração (Bridge)** | **Rust (Axum + Tokio)** | Zero pausas de GC, latência de microssegundos para WebSockets, concorrência assíncrona robusta (`tokio::sync::broadcast`), validação de contratos em tempo de compilação com `serde` e binário único ultraleve. |
-| **Comunicação em Tempo Real** | **WebSockets nativos (`axum::extract::ws`)** | Transmissão bidirecional de eventos de baixa latência da nuvem para o navegador do usuário. |
+| **Camada de Interface UI / HUD** | **Svelte 5 (Vite + TypeScript + Tailwind CSS)** | Reatividade compilada sem Virtual DOM (zero overhead ou stutter sobre o WebGL a 60 FPS), ciclo de vida limpo para instanciar o Canvas, animações cyberpunk nativas e bundle ultraleve (~26 kB gzip). |
+| **Renderizador 2D / Canvas** | **Phaser 3 (WebGL)** | Motor 2D de alta maturidade com pipeline WebGL, suporte nativo a camadas de profundidade (*isometric z-sorting*), sistemas de partículas para néon/fumaça e gerenciamento de spritesheets animados. |
+| **Pathfinding Isométrico** | **EasyStar.js / A\* Customizado** | Cálculo de rotas sobre a matriz de grid 2D sem travamentos, respeitando largura de passarelas, paredes e colisões. |
+| **Backend de Integração (Bridge)** | **Rust (Axum 0.8 + Tokio 1.54)** | Zero pausas de Garbage Collection, latência de microssegundos para WebSockets, concorrência assíncrona robusta (`tokio::sync::broadcast`), contratos estritos e seguros com `serde` e binário único ultraleve. |
+| **Comunicação em Tempo Real** | **WebSockets nativos (`axum::extract::ws` + Svelte client)** | Transmissão bidirecional de eventos de baixa latência da nuvem para o navegador com streaming de `WORLD_SNAPSHOT` e reconexão automática. |
 | **Fila / Gerenciamento de Estado** | **In-Memory (`Arc<RwLock<WorldState>>` + `tokio::sync::broadcast`)** (Redis opcional para clusters multi-nó) | Desacoplamento entre a ingestão das APIs externas e a distribuição de estados visuais na cidade com latência quase nula. |
 | **Assets Gráficos** | **Pixel Art Isométrica (32x32 / 64x64)** | Blocos modulares reutilizáveis de piso metálico, barreiras de neon, maquinários e folhas de sprites com 4/8 direções de movimento. |
 
