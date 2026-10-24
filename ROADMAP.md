@@ -28,7 +28,7 @@ flowchart TD
 | **T-1.3** | Gerenciamento de Estado do Mundo em Memória | **Done** ✅ | Alta | T-1.2 | Estruturar `WorldState` protegido por `Arc<RwLock>` e canais assíncronos `tokio::sync::broadcast` para distribuição de eventos. |
 | **T-1.4** | Endpoint HTTP de Ingestão da Ponte (Bridge Dispatch) | **Done** ✅ | Alta | T-1.3 | Implementar `POST /api/v1/bridge/dispatch` com autenticação Bearer Token, validação de payload e retorno HTTP 202/400/404. |
 | **T-1.5** | Endpoint WebSocket para Sincronização em Tempo Real | **Done** ✅ | Alta | T-1.4 | Implementar `GET /ws` usando `axum::extract::ws::WebSocketUpgrade` para streaming bidirecional de eventos JSON. |
-| **T-1.6** | Testes de Integração e Script Mock de Disparo | Backlog | Média | T-1.5 | Criar script de teste automatizado para validar envio de tarefas simuladas e recepção via WebSocket. |
+| **T-1.6** | Testes de Integração e Script Mock de Disparo | **Done** ✅ | Média | T-1.5 | Criar script de teste automatizado para validar envio de tarefas simuladas e recepção via WebSocket. |
 
 ---
 
