@@ -123,10 +123,21 @@ if __name__ == "__main__":
         if cmd == "search" and len(sys.argv) > 2:
             items = query_tasks(sys.argv[2])
             print(json.dumps(items, indent=2, ensure_ascii=False))
+        elif cmd == "update" and len(sys.argv) > 3:
+            target_id = sys.argv[2]
+            new_status = sys.argv[3]
+            items = query_tasks(target_id)
+            matched = [it for it in items if it["id"].strip().upper() == target_id.strip().upper()]
+            if not matched:
+                print(f"Task with ID {target_id} not found.")
+            else:
+                for it in matched:
+                    res = update_task_status(it["page_id"], new_status)
+                    print(f"Updated {it['id']} ({it['title']}) to status '{new_status}'.")
         elif cmd == "list":
             items = query_tasks()
             print(f"Total tasks: {len(items)}")
             for item in items:
                 print(f"[{item['id']}] {item['title']} - {item['status']}")
     else:
-        print("Usage: python notion_sync.py [search <term> | list]")
+        print("Usage: python notion_sync.py [search <term> | list | update <id> <status>]")

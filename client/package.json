@@ -13,6 +13,7 @@
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tailwindcss/vite": "^4.3.3",
     "@tsconfig/svelte": "^5.0.8",
+    "@types/easystarjs": "^0.1.29",
     "@types/node": "^24.19.2",
     "svelte": "^5.57.2",
     "svelte-check": "^4.7.7",
@@ -22,6 +23,7 @@
   },
   "dependencies": {
     "@lucide/svelte": "^1.61.0",
+    "easystarjs": "^0.4.4",
     "lucide-svelte": "^1.0.1",
     "phaser": "^4.2.1"
   }
