@@ -1,0 +1,28 @@
+# Rust
+/target/
+**/target/
+**/*.rs.bk
+Cargo.lock
+
+# Node / Frontend
+node_modules/
+dist/
+.vite/
+
+# Environments and Secrets
+.env
+.env.*
+!.env.example
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.log
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
