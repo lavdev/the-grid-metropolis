@@ -5,6 +5,8 @@ import { DataOcean } from '../dataOcean';
 import { CityTilesetRenderer } from '../tileset';
 import { TheNexusSector } from '../districts/nexus';
 import { ProjectPodStructure } from '../districts/projectPod';
+import { BatteryLoungeSector } from '../districts/batteryLounge';
+import { GlitchAlleySector } from '../districts/glitchAlley';
 import { DepthLayer, calculateIsometricDepth } from '../depth';
 
 export class MainIsometricScene extends Phaser.Scene {
@@ -19,6 +21,8 @@ export class MainIsometricScene extends Phaser.Scene {
   private tilesetRenderer!: CityTilesetRenderer;
   private nexusSector!: TheNexusSector;
   private podNotex!: ProjectPodStructure;
+  private loungeSector!: BatteryLoungeSector;
+  private glitchSector!: GlitchAlleySector;
   private pathGraphics!: Phaser.GameObjects.Graphics;
   private markerGraphics!: Phaser.GameObjects.Graphics;
 
@@ -53,17 +57,23 @@ export class MainIsometricScene extends Phaser.Scene {
     // 4. Project Pods (Ex: Pod Notex Core na ala leste da cidade)
     this.podNotex = new ProjectPodStructure(this, 'pod-notex', 'POD: NOTEX CORE', 12, 0);
 
-    // 5. Camada gráfica para desenhar trajetórias A* e seleções com Z-sorting correto
+    // 5. The Battery Lounge (Área de Ociosidade & Recarga na ala oeste)
+    this.loungeSector = new BatteryLoungeSector(this, -12, 0);
+
+    // 6. The Glitch Alleys (Área de Quarentena & Debug na ala norte)
+    this.glitchSector = new GlitchAlleySector(this, 0, -12);
+
+    // 7. Camada gráfica para desenhar trajetórias A* e seleções com Z-sorting correto
     this.pathGraphics = this.add.graphics();
     this.pathGraphics.setDepth(DepthLayer.PATH_OVERLAY);
 
     this.markerGraphics = this.add.graphics();
     this.markerGraphics.setDepth(DepthLayer.SELECTION_MARKER);
 
-    // 6. Marcações dos Distritos da Cidade
+    // 8. Marcações dos Distritos da Cidade
     this.setupDistrictMarkers();
 
-    // 7. Configura controles interativos de câmera e cliques no mapa
+    // 9. Configura controles interativos de câmera e cliques no mapa
     this.setupCameraControls();
     this.setupMapInteractivity();
 
@@ -72,7 +82,7 @@ export class MainIsometricScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number) {
-    // Atualiza correntes do Data Ocean, pulso dos dutos, Nexus e Pods
+    // Atualiza correntes do Data Ocean, pulso dos dutos e todos os distritos
     if (this.dataOcean) {
       this.dataOcean.update(delta);
     }
@@ -84,6 +94,12 @@ export class MainIsometricScene extends Phaser.Scene {
     }
     if (this.podNotex) {
       this.podNotex.update(delta);
+    }
+    if (this.loungeSector) {
+      this.loungeSector.update(delta);
+    }
+    if (this.glitchSector) {
+      this.glitchSector.update(delta);
     }
   }
 
@@ -127,9 +143,10 @@ export class MainIsometricScene extends Phaser.Scene {
       }
 
       if (this.pathfinder.isWalkable(cartTarget.x, cartTarget.y)) {
-        // Se clicar no Nexus (0, 0), dispara o pulso de despacho holográfico
+        // Se clicar no Nexus (0, 0), dispara o pulso de despacho holográfico e sobretensão nos dutos
         if (Math.abs(cartTarget.x) <= 1 && Math.abs(cartTarget.y) <= 1) {
           this.nexusSector.triggerDispatchPulse();
+          this.tilesetRenderer.triggerConduitSurge(0x00f0ff);
         }
 
         // Marca o destino com feedback visual néon

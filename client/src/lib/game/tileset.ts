@@ -275,6 +275,19 @@ export class CityTilesetRenderer {
   }
 
   /**
+   * Dispara uma onda de pulso acelerada nos dutos bioluminescentes ao despachar ou concluir dados
+   */
+  public triggerConduitSurge(color: number = 0x39ff14) {
+    for (let i = 0; i < this.conduitSegments.length; i++) {
+      this.conduitBeads.push({
+        segmentIndex: i,
+        t: 0,
+        speed: 0.025 + Math.random() * 0.015,
+      });
+    }
+  }
+
+  /**
    * Atualiza a animação de pulso dos fluidos nos dutos bioluminescentes
    */
   public update(delta: number) {
