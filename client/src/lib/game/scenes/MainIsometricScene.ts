@@ -7,6 +7,7 @@ import { TheNexusSector } from '../districts/nexus';
 import { ProjectPodStructure } from '../districts/projectPod';
 import { BatteryLoungeSector } from '../districts/batteryLounge';
 import { GlitchAlleySector } from '../districts/glitchAlley';
+import { AgentManager } from '../agents/AgentManager';
 import { DepthLayer, calculateIsometricDepth } from '../depth';
 
 export class MainIsometricScene extends Phaser.Scene {
@@ -23,6 +24,7 @@ export class MainIsometricScene extends Phaser.Scene {
   private podNotex!: ProjectPodStructure;
   private loungeSector!: BatteryLoungeSector;
   private glitchSector!: GlitchAlleySector;
+  private agentManager!: AgentManager;
   private pathGraphics!: Phaser.GameObjects.Graphics;
   private markerGraphics!: Phaser.GameObjects.Graphics;
 
@@ -63,17 +65,20 @@ export class MainIsometricScene extends Phaser.Scene {
     // 6. The Glitch Alleys (Área de Quarentena & Debug na ala norte)
     this.glitchSector = new GlitchAlleySector(this, 0, -12);
 
-    // 7. Camada gráfica para desenhar trajetórias A* e seleções com Z-sorting correto
+    // 7. Gerenciador de Agentes e População da Metrópole (Fase 4)
+    this.agentManager = new AgentManager(this);
+
+    // 8. Camada gráfica para desenhar trajetórias A* e seleções com Z-sorting correto
     this.pathGraphics = this.add.graphics();
     this.pathGraphics.setDepth(DepthLayer.PATH_OVERLAY);
 
     this.markerGraphics = this.add.graphics();
     this.markerGraphics.setDepth(DepthLayer.SELECTION_MARKER);
 
-    // 8. Marcações dos Distritos da Cidade
+    // 9. Marcações dos Distritos da Cidade
     this.setupDistrictMarkers();
 
-    // 9. Configura controles interativos de câmera e cliques no mapa
+    // 10. Configura controles interativos de câmera e cliques no mapa
     this.setupCameraControls();
     this.setupMapInteractivity();
 
@@ -82,7 +87,7 @@ export class MainIsometricScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number) {
-    // Atualiza correntes do Data Ocean, pulso dos dutos e todos os distritos
+    // Atualiza correntes do Data Ocean, pulso dos dutos, distritos e agentes
     if (this.dataOcean) {
       this.dataOcean.update(delta);
     }
@@ -100,6 +105,9 @@ export class MainIsometricScene extends Phaser.Scene {
     }
     if (this.glitchSector) {
       this.glitchSector.update(delta);
+    }
+    if (this.agentManager) {
+      this.agentManager.update(delta);
     }
   }
 
@@ -152,11 +160,18 @@ export class MainIsometricScene extends Phaser.Scene {
         // Marca o destino com feedback visual néon
         this.drawTargetMarker(cartTarget.x, cartTarget.y);
 
-        // Calcula a rota A* a partir do Nexus (0, 0) até o ponto clicado
-        const path = await this.pathfinder.findPath({ x: 0, y: 0 }, cartTarget);
+        // Despacha o agente selecionado para caminhar pelo grid A*
+        const activeAgent = this.agentManager.getSelectedAgent();
+        const startPoint = activeAgent
+          ? { x: Math.round(activeAgent.cartX), y: Math.round(activeAgent.cartY) }
+          : { x: 0, y: 0 };
+
+        const path = await this.pathfinder.findPath(startPoint, cartTarget);
         if (path) {
           this.drawAStarPath(path);
         }
+
+        await this.agentManager.dispatchTo(cartTarget.x, cartTarget.y, this.pathfinder);
       }
     });
   }

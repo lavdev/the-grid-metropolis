@@ -59,13 +59,13 @@ flowchart TD
 
 ## 4. Fase 4: Agentes, Sprites e Comportamento Espacial
 
-| ID | Tarefa | Prioridade | Dependências | Descrição |
-| :--- | :--- | :--- | :--- | :--- |
-| **T-4.1** | Spritesheets e Animações dos Personagens | Alta | T-2.5 | Configurar spritesheets para Hacker, Cientista, Robô de Automação e Drones em 4 direções. |
-| **T-4.2** | Máquina de Estados Finita dos Agentes | Alta | T-4.1 | Implementar transições de estado: `IDLE`, `WALKING`, `WORKING`, `MEETING` e `ERROR`. |
-| **T-4.3** | Navegação Espacial de Agentes pelas Passarelas | Alta | T-4.2, T-2.3 | Vincular máquina de estados ao pathfinding para caminhar suavemente até destinos com animação direcional. |
-| **T-4.4** | Sistema de Balões de Diálogo e Ícones Flutuantes | Alta | T-4.2 | Renderizar balões sincronizados com ícones (engrenagens, lâmpadas, códigos) sobre a cabeça dos agentes. |
-| **T-4.5** | Drones Aéreos de Mensageria | Média | T-4.1, T-3.1 | Implementar drones autônomos para transporte aéreo de pacotes de dados entre prédios distantes. |
+| ID | Tarefa | Status | Prioridade | Dependências | Descrição |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **T-4.1** | Spritesheets e Animações dos Personagens | **Done** ✅ | Alta | T-2.5 | Configurar spritesheets para Hacker, Cientista, Robô de Automação e Drones em 4 direções. |
+| **T-4.2** | Máquina de Estados Finita dos Agentes | **Done** ✅ | Alta | T-4.1 | Implementar transições de estado: `IDLE`, `WALKING`, `WORKING`, `MEETING` e `ERROR`. |
+| **T-4.3** | Navegação Espacial de Agentes pelas Passarelas | **Done** ✅ | Alta | T-4.2, T-2.3 | Vincular máquina de estados ao pathfinding para caminhar suavemente até destinos com animação direcional. |
+| **T-4.4** | Sistema de Balões de Diálogo e Ícones Flutuantes | **Done** ✅ | Alta | T-4.2 | Renderizar balões sincronizados com ícones (engrenagens, lâmpadas, códigos) sobre a cabeça dos agentes. |
+| **T-4.5** | Drones Aéreos de Mensageria | **Done** ✅ | Média | T-4.1, T-3.1 | Implementar drones autônomos para transporte aéreo de pacotes de dados entre prédios distantes. |
 
 ---
 
