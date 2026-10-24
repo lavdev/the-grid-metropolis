@@ -13,9 +13,10 @@ interface SparkParticle {
 }
 
 /**
- * GlitchAlleySector: Setor de quarentena, depuração e exceções da metrópole (The Glitch Alleys).
- * Apresenta cabos rompidos soltando faíscas, telas com estática/ruído de sinal,
- * faixas de perigo (hazard stripes) e balizas vermelhas de advertência.
+ * GlitchAlleySector: Edificação do The Glitch Alleys (Bunkers de Quarentena e Depuração).
+ * Um complexo denso de blocos de servidores modulares sobrepostos em estilo industrial,
+ * com faixas de advertência, subestação elétrica com transformadores soltando faíscas,
+ * telas de diagnóstico quebradas com estática e balizas de alerta.
  */
 export class GlitchAlleySector {
   private scene: Phaser.Scene;
@@ -39,92 +40,177 @@ export class GlitchAlleySector {
     this.staticScreenGraphics = this.scene.add.graphics();
     this.sparkGraphics = this.scene.add.graphics();
 
-    this.renderQuarantineStructures();
+    this.renderQuarantineComplex();
   }
 
-  public renderQuarantineStructures() {
+  public renderQuarantineComplex() {
     const { x: isoX, y: isoY } = cartesianToIsometric(this.cartX, this.cartY);
     const baseDepth = calculateIsometricDepth(this.cartX, this.cartY, DepthLayer.STRUCTURE_BASE);
     const roofDepth = calculateIsometricDepth(this.cartX, this.cartY, DepthLayer.STRUCTURE_ROOF);
 
     this.structureGraphics.setDepth(baseDepth);
-    this.staticScreenGraphics.setDepth(baseDepth + 4);
-    this.sparkGraphics.setDepth(roofDepth + 5);
+    this.staticScreenGraphics.setDepth(baseDepth + 5);
+    this.sparkGraphics.setDepth(roofDepth + 6);
 
     const g = this.structureGraphics;
     g.clear();
 
-    // 1. Barreira de quarentena com faixas de advertência
-    const barW = 28;
-    const barH = 14;
+    const halfW = 44;
+    const halfH = 22;
+    const wallH = 34; // Bloco volumétrico principal
 
-    g.fillStyle(0x1a0808, 0.95);
-    g.fillRect(isoX - barW, isoY - 16, barW * 2, 16);
-    g.lineStyle(1.5, 0xff3b30, 0.9);
-    g.strokeRect(isoX - barW, isoY - 16, barW * 2, 16);
+    // ==========================================
+    // 1. BLOCO PRINCIPAL DO BUNKER (PAREDES)
+    // ==========================================
 
-    // Listras diagonais de perigo (Hazard stripes)
-    g.lineStyle(2, 0xff9500, 0.7);
-    for (let x = -barW + 4; x < barW; x += 8) {
-      g.strokeLineShape(new Phaser.Geom.Line(isoX + x, isoY, isoX + x + 6, isoY - 16));
+    // Parede Sudoeste (Face Esquerda)
+    g.fillStyle(0x190a0a, 0.98); // Metal escuro oxidado
+    g.beginPath();
+    g.moveTo(isoX - halfW, isoY);
+    g.lineTo(isoX, isoY + halfH);
+    g.lineTo(isoX, isoY + halfH - wallH);
+    g.lineTo(isoX - halfW, isoY - wallH);
+    g.closePath();
+    g.fillPath();
+
+    g.lineStyle(1.5, 0x3d1414, 0.9);
+    g.strokePath();
+
+    // Faixas de Perigo Diagonais (Hazard Stripes) na parede esquerda
+    g.lineStyle(2, 0xff9900, 0.75);
+    for (let x = -halfW + 8; x < 0; x += 10) {
+      const p1y = isoY + (x + halfW) * 0.5;
+      g.strokeLineShape(new Phaser.Geom.Line(isoX + x, p1y - 8, isoX + x + 6, p1y - 20));
     }
 
-    // 2. Fios e cabos expostos rompidos
-    g.lineStyle(1.5, 0x334155, 1);
+    // Parede Sudeste (Face Direita - Acesso)
+    g.fillStyle(0x100505, 0.98);
     g.beginPath();
-    g.moveTo(isoX - 22, isoY);
-    g.lineTo(isoX - 16, isoY - 6);
-    g.lineTo(isoX - 10, isoY - 2);
+    g.moveTo(isoX, isoY + halfH);
+    g.lineTo(isoX + halfW, isoY);
+    g.lineTo(isoX + halfW, isoY - wallH);
+    g.lineTo(isoX, isoY + halfH - wallH);
+    g.closePath();
+    g.fillPath();
+
+    g.lineStyle(1.5, 0x3d1414, 0.9);
     g.strokePath();
 
+    // Porta Blindada de Quarentena
+    const doorW = 18;
+    const doorH = 22;
+    const doorX = isoX + 10;
+    const doorY = isoY + halfH - 24;
+
+    g.fillStyle(0x050202, 1);
+    g.fillRect(doorX, doorY, doorW, doorH);
+    g.lineStyle(1.5, 0xff3b30, 0.95);
+    g.strokeRect(doorX, doorY, doorW, doorH);
+
+    // ==========================================
+    // 2. LAJE SUPERIOR DO BUNKER E BLOCO SOBREPOSTO
+    // ==========================================
+    const roofY = isoY - wallH;
+
+    // Laje principal
+    g.fillStyle(0x220e0e, 1);
     g.beginPath();
-    g.moveTo(isoX + 12, isoY);
-    g.lineTo(isoX + 18, isoY - 4);
-    g.lineTo(isoX + 24, isoY - 1);
+    g.moveTo(isoX, roofY - halfH);
+    g.lineTo(isoX + halfW, roofY);
+    g.lineTo(isoX, roofY + halfH);
+    g.lineTo(isoX - halfW, roofY);
+    g.closePath();
+    g.fillPath();
+
+    g.lineStyle(1.5, 0xff3b30, 0.8);
     g.strokePath();
 
-    // 3. Totem de monitor de diagnóstico com ruído
-    const monX = isoX - 16;
-    const monY = isoY - 34;
-    g.fillStyle(0x0f0505, 1);
-    g.fillRect(monX, monY, 18, 12);
-    g.lineStyle(1, 0xff3b30, 0.8);
-    g.strokeRect(monX, monY, 18, 12);
+    // Bloco Modular Superior (Container Sobreposto)
+    const cW = 24;
+    const cH = 12;
+    const cWallH = 16;
+    const cX = isoX - 10;
+    const cY = roofY - 4;
 
-    // Baliza de alarme no topo do totem
-    g.fillStyle(0xff3b30, 1);
-    g.fillCircle(monX + 9, monY - 4, 3);
+    // Parede esquerda do container sobreposto
+    g.fillStyle(0x2d1010, 1);
+    g.beginPath();
+    g.moveTo(cX - cW, cY);
+    g.lineTo(cX, cY + cH);
+    g.lineTo(cX, cY + cH - cWallH);
+    g.lineTo(cX - cW, cY - cWallH);
+    g.closePath();
+    g.fillPath();
+
+    // Parede direita do container
+    g.fillStyle(0x1a0808, 1);
+    g.beginPath();
+    g.moveTo(cX, cY + cH);
+    g.lineTo(cX + cW, cY);
+    g.lineTo(cX + cW, cY - cWallH);
+    g.lineTo(cX, cY + cH - cWallH);
+    g.closePath();
+    g.fillPath();
+
+    // Teto do container
+    g.fillStyle(0x361414, 1);
+    g.beginPath();
+    g.moveTo(cX, cY - cWallH - cH);
+    g.lineTo(cX + cW, cY - cWallH);
+    g.lineTo(cX, cY + cH - cWallH);
+    g.lineTo(cX - cW, cY - cWallH);
+    g.closePath();
+    g.fillPath();
+    g.lineStyle(1, 0xff3b30, 0.7);
+    g.strokePath();
+
+    // ==========================================
+    // 3. TRANSFORMADOR ELÉTRICO E CABOS ROMPIDOS
+    // ==========================================
+    const transX = isoX + 16;
+    const transY = roofY + 2;
+
+    // Subestação
+    g.fillStyle(0x1c1a1a, 1);
+    g.fillRect(transX - 6, transY - 14, 12, 14);
+    g.lineStyle(1.5, 0xffcc00, 0.9);
+    g.strokeRect(transX - 6, transY - 14, 12, 14);
+
+    // Cabos soltos descendo do teto
+    g.lineStyle(1.5, 0x475569, 1);
+    g.beginPath();
+    g.moveTo(transX, transY);
+    g.lineTo(isoX + 6, isoY + halfH - 8);
+    g.lineTo(isoX - 8, isoY + halfH - 2);
+    g.strokePath();
   }
 
-  /**
-   * Atualização contínua de faíscas elétricas e estática na tela
-   */
   public update(delta: number) {
     this.animTimer += delta;
-    this.alertBlink += delta * 0.005;
+    this.alertBlink += delta * 0.006;
 
     const { x: isoX, y: isoY } = cartesianToIsometric(this.cartX, this.cartY);
+    const wallH = 34;
+    const roofY = isoY - wallH;
+    const transX = isoX + 16;
+    const transY = roofY - 14;
 
-    // 1. Gera faíscas aleatórias no cabo rompido
-    if (this.animTimer > 150) {
+    // 1. Gera faíscas elétricas saindo do transformador
+    if (this.animTimer > 110) {
       this.animTimer = 0;
-      const sparkX = isoX - 10 + Phaser.Math.FloatBetween(-2, 2);
-      const sparkY = isoY - 2;
-
       for (let s = 0; s < 3; s++) {
         this.sparks.push({
-          x: sparkX,
-          y: sparkY,
-          vx: Phaser.Math.FloatBetween(-1.2, 1.2),
-          vy: Phaser.Math.FloatBetween(-1.5, -0.2),
+          x: transX + Phaser.Math.FloatBetween(-2, 2),
+          y: transY,
+          vx: Phaser.Math.FloatBetween(-1.5, 1.5),
+          vy: Phaser.Math.FloatBetween(-2.0, -0.4),
           life: 0,
-          maxLife: 20,
-          color: Math.random() > 0.5 ? 0x00f0ff : 0xffcc00,
+          maxLife: 22,
+          color: Math.random() > 0.4 ? 0x00f0ff : 0xffcc00,
         });
       }
     }
 
-    // 2. Renderiza faíscas
     const spg = this.sparkGraphics;
     spg.clear();
 
@@ -132,7 +218,7 @@ export class GlitchAlleySector {
       const sp = this.sparks[i];
       sp.x += sp.vx;
       sp.y += sp.vy;
-      sp.vy += 0.08; // Gravidade
+      sp.vy += 0.09;
       sp.life++;
 
       if (sp.life >= sp.maxLife) {
@@ -144,33 +230,33 @@ export class GlitchAlleySector {
       spg.fillRect(sp.x, sp.y, 2, 2);
     }
 
-    // 3. Renderiza estática na tela do monitor de diagnóstico
+    // 2. Monitor CRT de diagnóstico com estática na fachada
     const sc = this.staticScreenGraphics;
     sc.clear();
 
-    const monX = isoX - 16;
-    const monY = isoY - 34;
+    const monX = isoX - 28;
+    const monY = isoY - 16;
     const monW = 16;
-    const monH = 10;
+    const monH = 11;
 
-    // Fundo da tela
-    sc.fillStyle(0x220909, 0.9);
-    sc.fillRect(monX + 1, monY + 1, monW, monH);
+    sc.fillStyle(0x180505, 0.95);
+    sc.fillRect(monX, monY, monW, monH);
+    sc.lineStyle(1.5, 0xff3b30, 0.9);
+    sc.strokeRect(monX, monY, monW, monH);
 
-    // Ruído e estática estocástica
-    sc.fillStyle(0xff3b30, 0.7);
-    for (let px = 0; px < monW; px += 3) {
-      for (let py = 0; py < monH; py += 2) {
-        if (Math.random() > 0.6) {
+    sc.fillStyle(0xff3b30, 0.75);
+    for (let px = 0; px < monW - 2; px += 3) {
+      for (let py = 0; py < monH - 2; py += 2) {
+        if (Math.random() > 0.55) {
           sc.fillRect(monX + 1 + px, monY + 1 + py, 2, 1.5);
         }
       }
     }
 
-    // Luz intermitente da baliza de alerta
-    const beaconAlpha = 0.4 + Math.sin(this.alertBlink) * 0.5;
+    // Baliza de alarme piscante no topo do bunker
+    const beaconAlpha = 0.35 + Math.sin(this.alertBlink) * 0.65;
     sc.fillStyle(0xff3b30, Math.max(0.1, beaconAlpha));
-    sc.fillCircle(monX + 9, monY - 4, 5);
+    sc.fillCircle(isoX - 10, roofY - 24, 4);
   }
 
   public destroy() {

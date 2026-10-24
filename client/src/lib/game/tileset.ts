@@ -29,8 +29,13 @@ export class CityTilesetRenderer {
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.slabGraphics = this.scene.add.graphics();
+    this.slabGraphics.setDepth(DepthLayer.PLATFORM_SLAB);
+
     this.floorGraphics = this.scene.add.graphics();
+    this.floorGraphics.setDepth(DepthLayer.FLOOR_TILE);
+
     this.conduitGraphics = this.scene.add.graphics();
+    this.conduitGraphics.setDepth(DepthLayer.CONDUIT);
   }
 
   /**
@@ -294,7 +299,7 @@ export class CityTilesetRenderer {
     this.pulseTimer += delta * 0.002;
     const g = this.conduitGraphics;
     g.clear();
-    g.setDepth(calculateIsometricDepth(0, 0, DepthLayer.CONDUIT));
+    g.setDepth(DepthLayer.CONDUIT);
 
     // Renderiza linha do duto bioluminescente
     g.lineStyle(1.5, 0x00f0ff, 0.35);

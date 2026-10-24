@@ -53,6 +53,7 @@ flowchart TD
 | **T-3.3** | Construção do The Battery Lounge | **Done** ✅ | Média | T-2.4 | Montar bar retrofuturista com letreiros néon verticais, balcão iluminado e banquetas para agentes em repouso. |
 | **T-3.4** | Construção do The Glitch Alleys | **Done** ✅ | Média | T-2.4 | Renderizar beco de quarentena com cabos expostos, peças desconectadas, estática de monitor e avisos luminosos. |
 | **T-3.5** | Tubulações Luminescentes com Fluxo Bioluminescente | **Done** ✅ | Média | T-3.1, T-3.2 | Implementar dutos de vidro no chão transportando partículas de luz animadas simulando tráfego de dados. |
+| **T-3.6** | Arquitetura e Modelagem Volumétrica das Edificações | **Done** ✅ | Alta | T-3.1, T-3.2, T-3.3, T-3.4 | Construir as edificações completas com volumetria isométrica 2:1, paredes de múltiplos pavimentos, janelas com iluminação de dados, telhados detalhados, marquises néon e estruturas arquitetônicas imponentes. |
 
 ---
 

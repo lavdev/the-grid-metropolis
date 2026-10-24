@@ -3,8 +3,8 @@
  * Segue a hierarquia visual do mundo cyberpunk de The Grid Metropolis.
  */
 export enum DepthLayer {
-  DATA_OCEAN = -1000,
-  DATA_PACKETS = -900,
+  DATA_OCEAN = -100000,
+  DATA_PACKETS = -90000,
   PLATFORM_SLAB = 5,
   FLOOR_TILE = 10,
   CONDUIT = 20,
@@ -22,9 +22,10 @@ export enum DepthLayer {
 /**
  * Calcula a profundidade isométrica z-index exata para qualquer coordenada e camada.
  * No grid isométrico 2:1, a profundidade visual cresce com (cartX + cartY).
+ * O offset de +100 garante valores estritamente positivos acima do Data Ocean.
  */
 export function calculateIsometricDepth(cartX: number, cartY: number, layer: DepthLayer = DepthLayer.ENTITY): number {
-  const baseDepth = (cartX + cartY) * 100;
+  const baseDepth = (cartX + cartY + 100) * 1000;
   return baseDepth + layer;
 }
 

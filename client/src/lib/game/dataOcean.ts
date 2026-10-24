@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { DepthLayer } from './depth';
 
 interface DataPacket {
   x: number;
@@ -27,10 +28,10 @@ export class DataOcean {
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.backgroundGraphics = this.scene.add.graphics();
-    this.backgroundGraphics.setDepth(-1000);
+    this.backgroundGraphics.setDepth(DepthLayer.DATA_OCEAN);
 
     this.particleGraphics = this.scene.add.graphics();
-    this.particleGraphics.setDepth(-900);
+    this.particleGraphics.setDepth(DepthLayer.DATA_PACKETS);
 
     this.initializeDataPackets();
     this.renderStaticGrid();

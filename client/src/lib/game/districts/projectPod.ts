@@ -3,8 +3,8 @@ import { cartesianToIsometric, TILE_WIDTH, TILE_HEIGHT } from '../isometric';
 import { DepthLayer, calculateIsometricDepth } from '../depth';
 
 export interface PodVisualState {
-  powerLevel: number; // 0 a 100
-  chimneySmokeColor: number; // Ex: 0x39ff14, 0x00f0ff, 0xff3b30
+  powerLevel: number;
+  chimneySmokeColor: number;
   screenStatus: 'OFF' | 'CODE_STREAM' | 'DASHBOARD' | 'ALERT_RED';
 }
 
@@ -21,9 +21,10 @@ interface SmokeParticle {
 }
 
 /**
- * ProjectPodStructure: Representa uma cúpula/fábrica modular de projeto (ex: Notex Core).
- * Inclui paredes industriais, cúpula de observação com modo X-Ray, chaminé com fumaça
- * e telas externas com código em tempo real.
+ * ProjectPodStructure: Edificação Industrial Volumétrica de Projeto (ex: Notex Core).
+ * Um laboratório/fábrica cibernética de 2 pavimentos com paredes de aço escuro,
+ * janelas de datacenters iluminadas, porta de hangar pressurizada, chaminés industriais duplas
+ * e cúpula de observação geodésica com suporte a Visão em Corte (X-Ray Cutaway).
  */
 export class ProjectPodStructure {
   private scene: Phaser.Scene;
@@ -40,7 +41,7 @@ export class ProjectPodStructure {
 
   private isXRayOpen = false;
   private visualState: PodVisualState = {
-    powerLevel: 80,
+    powerLevel: 85,
     chimneySmokeColor: 0x39ff14, // Verde néon fluorescente
     screenStatus: 'CODE_STREAM',
   };
@@ -87,161 +88,238 @@ export class ProjectPodStructure {
     this.interiorGraphics.setDepth(baseDepth + 2);
     this.screenGraphics.setDepth(baseDepth + 5);
     this.domeGraphics.setDepth(roofDepth);
-    this.smokeGraphics.setDepth(roofDepth + 5);
+    this.smokeGraphics.setDepth(roofDepth + 6);
 
-    this.renderIndustrialBase(isoX, isoY);
-    this.renderInterior(isoX, isoY);
-    this.renderDomeAndChimney(isoX, isoY);
+    this.renderVolumetricBuilding(isoX, isoY);
+    this.renderInteriorLab(isoX, isoY);
+    this.renderRooftopAndDome(isoX, isoY);
   }
 
   /**
-   * Paredes externas metálicas e fundações modulares
+   * Renderiza a edificação de 2 pavimentos (paredes volumétricas e fachadas)
    */
-  private renderIndustrialBase(isoX: number, isoY: number) {
+  private renderVolumetricBuilding(isoX: number, isoY: number) {
     const g = this.baseGraphics;
     g.clear();
 
-    const w = TILE_WIDTH * 1.5;
-    const h = TILE_HEIGHT * 1.5;
-    const wallH = 32;
+    const halfW = 46;
+    const halfH = 23;
+    const wallH = 46; // Edificação de 2 andares imponente
 
-    // Face Sudoeste da parede
-    g.fillStyle(0x0a1422, 0.95);
+    // ==========================================
+    // 1. PAREDE SUDOESTE (FACE ESQUERDA)
+    // ==========================================
+    g.fillStyle(0x0a1622, 0.98); // Aço industrial escuro
     g.beginPath();
-    g.moveTo(isoX - w / 2, isoY);
-    g.lineTo(isoX, isoY + h / 2);
-    g.lineTo(isoX, isoY + h / 2 - wallH);
-    g.lineTo(isoX - w / 2, isoY - wallH);
+    g.moveTo(isoX - halfW, isoY);
+    g.lineTo(isoX, isoY + halfH);
+    g.lineTo(isoX, isoY + halfH - wallH);
+    g.lineTo(isoX - halfW, isoY - wallH);
     g.closePath();
     g.fillPath();
 
-    g.lineStyle(1.5, 0x1e3a5f, 0.8);
+    g.lineStyle(1.5, 0x162c3f, 0.9);
     g.strokePath();
 
-    // Face Sudeste da parede (com porta de acesso pressurizada)
-    g.fillStyle(0x070e17, 0.95);
+    // Faixas horizontais de janelas de servidores (Andar 1 e Andar 2)
+    const windowColors = [0x39ff14, 0x00f0ff];
+    for (let floor = 0; floor < 2; floor++) {
+      const fOffsetY = floor * 18 + 10;
+      for (let w = 0; w < 3; w++) {
+        const wx = isoX - halfW + 10 + w * 12;
+        const wy = isoY + (w * 6) + 4 - fOffsetY;
+        g.fillStyle(windowColors[floor % 2], 0.85);
+        g.fillRect(wx, wy, 8, 3);
+      }
+    }
+
+    // Pilares verticais e tubos industriais na parede esquerda
+    g.fillStyle(0x112335, 1);
+    g.fillRect(isoX - halfW + 4, isoY - wallH + 2, 4, wallH - 4);
+    g.fillRect(isoX - 6, isoY + halfH - wallH + 2, 4, wallH - 4);
+
+    // ==========================================
+    // 2. PAREDE SUDESTE (FACE DIREITA - ENTRADA)
+    // ==========================================
+    g.fillStyle(0x060f17, 0.98);
     g.beginPath();
-    g.moveTo(isoX, isoY + h / 2);
-    g.lineTo(isoX + w / 2, isoY);
-    g.lineTo(isoX + w / 2, isoY - wallH);
-    g.lineTo(isoX, isoY + h / 2 - wallH);
+    g.moveTo(isoX, isoY + halfH);
+    g.lineTo(isoX + halfW, isoY);
+    g.lineTo(isoX + halfW, isoY - wallH);
+    g.lineTo(isoX, isoY + halfH - wallH);
     g.closePath();
     g.fillPath();
 
-    g.lineStyle(1.5, 0x1e3a5f, 0.8);
+    g.lineStyle(1.5, 0x162c3f, 0.9);
     g.strokePath();
 
-    // Porta pressurizada iluminada
-    g.fillStyle(0x0f293d, 0.9);
-    g.fillRect(isoX + 4, isoY + h / 2 - 20, 16, 18);
-    g.lineStyle(1.5, 0x39ff14, 0.9); // Luz verde néon sobre a porta
-    g.strokeRect(isoX + 4, isoY + h / 2 - 20, 16, 18);
+    // Porta de Hangar Pressurizada
+    const doorW = 20;
+    const doorH = 24;
+    const doorX = isoX + 12;
+    const doorY = isoY + halfH - 26;
 
-    // Chaminé de exaustão lateral no canto leste
-    const chimX = isoX + w / 2 - 6;
-    const chimY = isoY - wallH;
-    g.fillStyle(0x111c2a, 1);
-    g.fillRect(chimX - 4, chimY - 22, 8, 22);
-    g.lineStyle(1.5, 0x00f0ff, 0.7);
-    g.strokeRect(chimX - 4, chimY - 22, 8, 22);
+    g.fillStyle(0x04090e, 1);
+    g.fillRect(doorX, doorY, doorW, doorH);
+    g.lineStyle(2, 0x39ff14, 0.9);
+    g.strokeRect(doorX, doorY, doorW, doorH);
+
+    // Faixa diagonal de advertência na porta
+    g.lineStyle(1, 0xff9900, 0.7);
+    g.strokeLineShape(new Phaser.Geom.Line(doorX + 2, doorY + doorH - 4, doorX + doorW - 2, doorY + 4));
+
+    // Luz de status da porta
+    g.fillStyle(0x39ff14, 1);
+    g.fillCircle(doorX + doorW / 2, doorY - 4, 3);
+
+    // ==========================================
+    // 3. LAJE SUPERIOR / TELHADO (ROOFTOP SLAB)
+    // ==========================================
+    const roofY = isoY - wallH;
+
+    g.fillStyle(0x0d1f2d, 1);
+    g.beginPath();
+    g.moveTo(isoX, roofY - halfH);
+    g.lineTo(isoX + halfW, roofY);
+    g.lineTo(isoX, roofY + halfH);
+    g.lineTo(isoX - halfW, roofY);
+    g.closePath();
+    g.fillPath();
+
+    g.lineStyle(2, 0x39ff14, 0.85); // Borda néon verde no terraço
+    g.strokePath();
+
+    // ==========================================
+    // 4. DUAS CHAMINÉS INDUSTRIAIS
+    // ==========================================
+    const chimWidth = 7;
+    const chimH = 20;
+
+    // Chaminé 1 (Noroeste)
+    const chim1X = isoX - 18;
+    const chim1Y = roofY - 8;
+    g.fillStyle(0x142533, 1);
+    g.fillRect(chim1X - chimWidth / 2, chim1Y - chimH, chimWidth, chimH);
+    g.lineStyle(1.5, 0x00f0ff, 0.8);
+    g.strokeRect(chim1X - chimWidth / 2, chim1Y - chimH, chimWidth, chimH);
+
+    // Chaminé 2 (Nordeste)
+    const chim2X = isoX + 22;
+    const chim2Y = roofY - 4;
+    g.fillStyle(0x142533, 1);
+    g.fillRect(chim2X - chimWidth / 2, chim2Y - chimH, chimWidth, chimH);
+    g.lineStyle(1.5, 0x39ff14, 0.8);
+    g.strokeRect(chim2X - chimWidth / 2, chim2Y - chimH, chimWidth, chimH);
   }
 
   /**
-   * Interior revelado em corte (Visão X-Ray) com estações, racks de servidores e monitores
+   * Interior revelado em corte (Visão X-Ray) com estações, racks de servidores e computadores
    */
-  private renderInterior(isoX: number, isoY: number) {
+  private renderInteriorLab(isoX: number, isoY: number) {
     const g = this.interiorGraphics;
     g.clear();
 
-    if (!this.isXRayOpen) return; // Só renderiza se a cúpula estiver transparente/oculta
+    if (!this.isXRayOpen) return;
 
-    // Piso interno em grade cibernética
-    g.fillStyle(0x081d13, 0.95);
-    g.fillEllipse(isoX, isoY - 20, 72, 36);
+    const wallH = 46;
+    const floorY = isoY - wallH;
 
-    // Servidores em Rack com LEDs pulsando
-    g.fillStyle(0x050a10, 1);
-    g.fillRect(isoX - 24, isoY - 38, 12, 20);
-    g.lineStyle(1, 0x00f0ff, 0.9);
-    g.strokeRect(isoX - 24, isoY - 38, 12, 20);
+    // Piso do laboratório
+    g.fillStyle(0x061810, 0.95);
+    g.fillEllipse(isoX, floorY, 52, 26);
+    g.lineStyle(1, 0x39ff14, 0.6);
+    g.strokeEllipse(isoX, floorY, 52, 26);
 
-    // LEDs do rack
-    for (let ly = 0; ly < 4; ly++) {
+    // Racks de Servidores Principais
+    g.fillStyle(0x040c07, 1);
+    g.fillRect(isoX - 20, floorY - 24, 14, 22);
+    g.lineStyle(1.5, 0x39ff14, 0.9);
+    g.strokeRect(isoX - 20, floorY - 24, 14, 22);
+
+    // LEDs pulsando no rack
+    for (let ly = 0; ly < 5; ly++) {
       g.fillStyle(ly % 2 === 0 ? 0x39ff14 : 0x00f0ff, 1);
-      g.fillRect(isoX - 22, isoY - 35 + ly * 4, 3, 2);
+      g.fillRect(isoX - 18, floorY - 21 + ly * 4, 3, 2);
     }
 
-    // Mesa de desenvolvimento com monitor duplo
-    g.fillStyle(0x0b2438, 1);
-    g.fillRect(isoX - 2, isoY - 26, 16, 8);
-    g.lineStyle(1, 0x00f0ff, 0.8);
-    g.strokeRect(isoX - 2, isoY - 26, 16, 8);
+    // Estação de trabalho do Engenheiro de Software
+    g.fillStyle(0x092015, 1);
+    g.fillRect(isoX + 2, floorY - 14, 18, 10);
+    g.lineStyle(1, 0x00f0ff, 0.9);
+    g.strokeRect(isoX + 2, floorY - 14, 18, 10);
+
+    // Monitores duplos na bancada
+    g.fillStyle(0x00f0ff, 0.9);
+    g.fillRect(isoX + 4, floorY - 20, 6, 5);
+    g.fillRect(isoX + 12, floorY - 20, 6, 5);
   }
 
   /**
-   * Cúpula de observação em vidro reforçado e telhado translúcido
+   * Cúpula Geodésica de Vidro Reforçado no topo da edificação
    */
-  private renderDomeAndChimney(isoX: number, isoY: number) {
+  private renderRooftopAndDome(isoX: number, isoY: number) {
     const g = this.domeGraphics;
     g.clear();
 
-    const domeY = isoY - 32;
-    const radiusX = 42;
-    const radiusY = 22;
+    const wallH = 46;
+    const domeY = isoY - wallH;
+    const radiusX = 30;
+    const radiusY = 15;
 
     if (this.isXRayOpen) {
-      // Modo X-Ray: Cúpula em aramado holográfico translúcido tênue
-      g.lineStyle(1, 0x00f0ff, 0.25);
+      // Modo X-Ray: Cúpula transparente em aramado holográfico tênue
+      g.lineStyle(1, 0x00f0ff, 0.3);
       g.strokeEllipse(isoX, domeY, radiusX * 2, radiusY * 2);
       g.lineStyle(1, 0x00f0ff, 0.15);
-      g.strokeEllipse(isoX, domeY - 14, radiusX * 1.4, radiusY * 1.4);
+      g.strokeEllipse(isoX, domeY - 10, radiusX * 1.4, radiusY * 1.4);
       return;
     }
 
-    // Cúpula em vidro reforçado com brilho translúcido
-    g.fillStyle(0x0a2638, 0.7);
+    // Cúpula em vidro pressurizado com volume translúcido
+    g.fillStyle(0x09261a, 0.72);
     g.fillEllipse(isoX, domeY, radiusX * 2, radiusY * 2);
 
-    // Nervuras estruturais da cúpula
-    g.lineStyle(2, 0x00f0ff, 0.8);
+    // Estrutura geodésica em néon verde
+    g.lineStyle(2, 0x39ff14, 0.85);
     g.strokeEllipse(isoX, domeY, radiusX * 2, radiusY * 2);
 
-    g.lineStyle(1.5, 0x00f0ff, 0.5);
-    g.strokeEllipse(isoX, domeY - 10, radiusX * 1.3, radiusY * 1.3);
+    g.lineStyle(1.5, 0x00f0ff, 0.6);
+    g.strokeEllipse(isoX, domeY - 8, radiusX * 1.4, radiusY * 1.4);
 
-    // Reflexo de luz / Brilho especular no vidro reforçado
-    g.lineStyle(2, 0xffffff, 0.5);
+    // Brilho especular do vidro curvo
+    g.lineStyle(2, 0xffffff, 0.6);
     g.beginPath();
-    g.arc(isoX - 12, domeY - 8, 12, Math.PI * 1.1, Math.PI * 1.6);
+    g.arc(isoX - 8, domeY - 6, 8, Math.PI * 1.1, Math.PI * 1.6);
     g.strokePath();
   }
 
   /**
-   * Atualização contínua das partículas da chaminé e monitor de código
+   * Atualização contínua das partículas de fumaça das chaminés e tela de código
    */
   public update(delta: number) {
     this.animTimer += delta;
     const { x: isoX, y: isoY } = cartesianToIsometric(this.cartX, this.cartY);
-    const chimX = isoX + TILE_WIDTH * 0.75 - 6;
-    const chimY = isoY - 32 - 22;
+    const wallH = 46;
+    const roofY = isoY - wallH;
+    const chim1X = isoX - 18;
+    const chim1Y = roofY - 8 - 20;
 
-    // 1. Gera fumaça contínua saindo da chaminé
-    if (this.animTimer > 80) {
+    // Emite partículas de vapor da chaminé
+    if (this.animTimer > 70) {
       this.animTimer = 0;
       this.smokeParticles.push({
-        x: chimX + Phaser.Math.FloatBetween(-2, 2),
-        y: chimY,
-        speedY: Phaser.Math.FloatBetween(-0.4, -0.9),
-        speedX: Phaser.Math.FloatBetween(-0.2, 0.3),
-        alpha: 0.8,
-        size: Phaser.Math.Between(3, 6),
-        maxLife: 90,
+        x: chim1X + Phaser.Math.FloatBetween(-2, 2),
+        y: chim1Y,
+        speedY: Phaser.Math.FloatBetween(-0.5, -1.0),
+        speedX: Phaser.Math.FloatBetween(-0.25, 0.25),
+        alpha: 0.85,
+        size: Phaser.Math.Between(3, 7),
+        maxLife: 80,
         life: 0,
         color: this.visualState.chimneySmokeColor,
       });
     }
 
-    // 2. Anima e renderiza as partículas de vapor colorido
     const sg = this.smokeGraphics;
     sg.clear();
 
@@ -249,9 +327,9 @@ export class ProjectPodStructure {
       const p = this.smokeParticles[i];
       p.x += p.speedX;
       p.y += p.speedY;
-      p.size += 0.05;
+      p.size += 0.06;
       p.life++;
-      p.alpha = Math.max(0, 0.8 * (1 - p.life / p.maxLife));
+      p.alpha = Math.max(0, 0.85 * (1 - p.life / p.maxLife));
 
       if (p.life >= p.maxLife) {
         this.smokeParticles.splice(i, 1);
@@ -262,7 +340,7 @@ export class ProjectPodStructure {
       sg.fillCircle(p.x, p.y, p.size);
     }
 
-    // 3. Renderiza tela externa com linhas de código fluindo
+    // Tela com linhas de código
     this.renderScreenCode(isoX, isoY, delta);
   }
 
@@ -270,24 +348,22 @@ export class ProjectPodStructure {
     const sc = this.screenGraphics;
     sc.clear();
 
-    const screenX = isoX - 32;
-    const screenY = isoY - 24;
-    const screenW = 22;
+    const screenX = isoX - 38;
+    const screenY = isoY - 14;
+    const screenW = 24;
     const screenH = 14;
 
-    // Moldura do Monitor Externo
     sc.fillStyle(0x040810, 0.95);
     sc.fillRect(screenX, screenY, screenW, screenH);
-    sc.lineStyle(1, 0x00f0ff, 0.7);
+    sc.lineStyle(1.5, 0x00f0ff, 0.85);
     sc.strokeRect(screenX, screenY, screenW, screenH);
 
-    // Linhas de código em fluxo
     this.codeLinesOffset = (this.codeLinesOffset + delta * 0.03) % 4;
 
-    sc.fillStyle(this.visualState.chimneySmokeColor, 0.85);
+    sc.fillStyle(this.visualState.chimneySmokeColor, 0.9);
     for (let i = 0; i < 3; i++) {
       const lineY = screenY + 3 + ((i * 3 + this.codeLinesOffset) % (screenH - 4));
-      const lineW = 6 + ((i * 5) % 12);
+      const lineW = 6 + ((i * 6) % 14);
       sc.fillRect(screenX + 2, lineY, lineW, 1.5);
     }
   }

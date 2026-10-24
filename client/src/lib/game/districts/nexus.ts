@@ -1,16 +1,17 @@
 import Phaser from 'phaser';
-import { cartesianToIsometric } from '../isometric';
+import { cartesianToIsometric, TILE_WIDTH, TILE_HEIGHT } from '../isometric';
 import { DepthLayer, calculateIsometricDepth } from '../depth';
 
 /**
- * TheNexusSector: Representa o Centro de Comando e Despacho de Missões (The Nexus).
- * Contém a mesa holográfica circular central e a antena parabólica de transmissão massiva.
+ * TheNexusSector: A Cidadela Central de Orquestração & Despacho (The Nexus).
+ * Uma imponente edificação octogonal de comando com múltiplos pavimentos,
+ * paredes volumétricas de aço blindado, painéis de dados luminescentes,
+ * praça superior elevada com a mesa holográfica translúcida e torre de transmissão.
  */
 export class TheNexusSector {
   private scene: Phaser.Scene;
   private baseGraphics: Phaser.GameObjects.Graphics;
   private holoGraphics: Phaser.GameObjects.Graphics;
-  private antennaGraphics: Phaser.GameObjects.Graphics;
   private pulseGraphics: Phaser.GameObjects.Graphics;
 
   private holoAngle = 0;
@@ -18,29 +19,23 @@ export class TheNexusSector {
   private isPulsing = false;
   private pulseAlpha = 0;
 
-  // Posição central do Nexus
+  // Centro da Cidadela
   private readonly centerX = 0;
   private readonly centerY = 0;
-
-  // Posição da antena no quadrante norte do Nexus
-  private readonly antennaX = 0;
-  private readonly antennaY = -2;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     this.baseGraphics = this.scene.add.graphics();
     this.holoGraphics = this.scene.add.graphics();
-    this.antennaGraphics = this.scene.add.graphics();
     this.pulseGraphics = this.scene.add.graphics();
 
-    this.renderBaseStation();
-    this.renderAntennaArray();
+    this.renderCitadel();
   }
 
   /**
-   * Renderiza a base física da mesa holográfica central
+   * Renderiza a edificação volumétrica completa da Cidadela The Nexus
    */
-  private renderBaseStation() {
+  public renderCitadel() {
     const g = this.baseGraphics;
     const { x: isoX, y: isoY } = cartesianToIsometric(this.centerX, this.centerY);
     const depth = calculateIsometricDepth(this.centerX, this.centerY, DepthLayer.STRUCTURE_BASE);
@@ -48,66 +43,148 @@ export class TheNexusSector {
     g.setDepth(depth);
     g.clear();
 
-    // Pedestal cilíndrico metálico (base isométrica)
-    const baseW = 34;
-    const baseH = 17;
-    const height = 12;
+    const halfW = 48; // Largura do bloco da cidadela
+    const halfH = 24; // Profundidade do bloco
+    const wallH = 34; // Altura volumétrica das paredes
 
-    // Face lateral cilíndrica da mesa
-    g.fillStyle(0x06111f, 0.95);
-    g.fillEllipse(isoX, isoY + height, baseW * 2, baseH * 2);
+    // ==========================================
+    // 1. FUNDAÇÃO E PAREDES VOLUMÉTRICAS (TÉRREO)
+    // ==========================================
 
-    // Paredes verticais do pedestal
-    g.fillStyle(0x0a1c30, 0.95);
-    g.fillRect(isoX - baseW, isoY, baseW * 2, height);
+    // Parede Sudoeste (Face Esquerda)
+    g.fillStyle(0x0a1626, 0.98); // Aço escuro de comando
+    g.beginPath();
+    g.moveTo(isoX - halfW, isoY);
+    g.lineTo(isoX, isoY + halfH);
+    g.lineTo(isoX, isoY + halfH - wallH);
+    g.lineTo(isoX - halfW, isoY - wallH);
+    g.closePath();
+    g.fillPath();
 
-    // Tampo superior da mesa holográfica
-    g.fillStyle(0x0d2847, 0.95);
-    g.fillEllipse(isoX, isoY, baseW * 2, baseH * 2);
+    g.lineStyle(1.5, 0x15314f, 0.9);
+    g.strokePath();
 
-    // Anel externo iluminado da mesa
-    g.lineStyle(2, 0x00f0ff, 0.9);
-    g.strokeEllipse(isoX, isoY, baseW * 2, baseH * 2);
+    // Detalhes da Parede Esquerda: Pilares verticais e janelas de servidores
+    for (let p = 1; p <= 3; p++) {
+      const px = isoX - halfW + (p * halfW) / 4;
+      const py = isoY + (p * halfH) / 4;
+      // Pilar de reforço
+      g.fillStyle(0x0e2035, 1);
+      g.fillRect(px - 2, py - wallH, 4, wallH);
+      // Janela horizontal de fluxo de dados
+      g.fillStyle(0x00f0ff, 0.7);
+      g.fillRect(px + 4, py - wallH + 10, 6, 2);
+    }
 
-    // Emitter central do projetor
-    g.fillStyle(0x00f0ff, 1);
-    g.fillCircle(isoX, isoY, 4);
-  }
+    // Parede Sudeste (Face Direita - Fachada Principal)
+    g.fillStyle(0x07111e, 0.98); // Sombra mais intensa
+    g.beginPath();
+    g.moveTo(isoX, isoY + halfH);
+    g.lineTo(isoX + halfW, isoY);
+    g.lineTo(isoX + halfW, isoY - wallH);
+    g.lineTo(isoX, isoY + halfH - wallH);
+    g.closePath();
+    g.fillPath();
 
-  /**
-   * Renderiza a torre e antena parabólica de transmissão massiva
-   */
-  private renderAntennaArray() {
-    const g = this.antennaGraphics;
-    const { x: isoX, y: isoY } = cartesianToIsometric(this.antennaX, this.antennaY);
-    const depth = calculateIsometricDepth(this.antennaX, this.antennaY, DepthLayer.STRUCTURE_BASE);
+    g.lineStyle(1.5, 0x15314f, 0.9);
+    g.strokePath();
 
-    g.setDepth(depth);
-    g.clear();
+    // Portal de acesso central da Cidadela
+    const gateW = 18;
+    const gateH = 20;
+    g.fillStyle(0x040910, 1);
+    g.fillRect(isoX + 10, isoY + halfH - 22, gateW, gateH);
+    g.lineStyle(1.5, 0x00f0ff, 0.9);
+    g.strokeRect(isoX + 10, isoY + halfH - 22, gateW, gateH);
 
-    // Pylon de treliça metálica (Torre)
-    const towerH = 50;
-    g.lineStyle(2, 0x1b2d42, 0.9);
-    g.strokeLineShape(new Phaser.Geom.Line(isoX - 8, isoY, isoX - 4, isoY - towerH));
-    g.strokeLineShape(new Phaser.Geom.Line(isoX + 8, isoY, isoX + 4, isoY - towerH));
-    g.strokeLineShape(new Phaser.Geom.Line(isoX - 6, isoY - towerH * 0.5, isoX + 6, isoY - towerH * 0.5));
+    // Linha de energia do portal
+    g.fillStyle(0x39ff14, 0.9);
+    g.fillRect(isoX + 12, isoY + halfH - 24, gateW - 4, 2);
 
-    // Antena Parabólica no topo
-    const topY = isoY - towerH;
-    g.fillStyle(0x0d2238, 0.95);
+    // ==========================================
+    // 2. PRAÇA ELEVADA (ROOFTOP PLAZA)
+    // ==========================================
+    const roofY = isoY - wallH;
+
+    // Piso do terraço superior
+    g.fillStyle(0x0d2036, 1);
+    g.beginPath();
+    g.moveTo(isoX, roofY - halfH);
+    g.lineTo(isoX + halfW, roofY);
+    g.lineTo(isoX, roofY + halfH);
+    g.lineTo(isoX - halfW, roofY);
+    g.closePath();
+    g.fillPath();
+
+    // Guarda-corpo e parapeito iluminado em néon ciano
     g.lineStyle(2, 0x00f0ff, 0.85);
+    g.strokePath();
 
-    // Prato parabólico
-    g.fillEllipse(isoX, topY, 40, 20);
-    g.strokeEllipse(isoX, topY, 40, 20);
+    // Detalhe geométrico octogonal interno no piso do terraço
+    g.lineStyle(1, 0x1e456e, 0.6);
+    g.beginPath();
+    g.moveTo(isoX, roofY - halfH + 8);
+    g.lineTo(isoX + halfW - 14, roofY);
+    g.lineTo(isoX, roofY + halfH - 8);
+    g.lineTo(isoX - halfW + 14, roofY);
+    g.closePath();
+    g.strokePath();
 
-    // Receptor central focal da parabólica
-    g.lineStyle(2, 0x9d00ff, 0.9);
-    g.strokeLineShape(new Phaser.Geom.Line(isoX, topY, isoX - 5, topY - 14));
+    // ==========================================
+    // 3. MESA HOLOGRÁFICA ELEVADA NO CENTRO DO TERRAÇO
+    // ==========================================
+    const tableW = 20;
+    const tableH = 10;
+    const tableElevation = 8;
+    const tCenterY = roofY;
 
-    // Luz de alerta da antena (Beacon vermelho/ciano)
+    // Pedestal da mesa
+    g.fillStyle(0x06111f, 1);
+    g.fillRect(isoX - 8, tCenterY - tableElevation, 16, tableElevation);
+
+    // Tampo circular da mesa holográfica
+    g.fillStyle(0x0f2d4d, 1);
+    g.fillEllipse(isoX, tCenterY - tableElevation, tableW * 2, tableH * 2);
+    g.lineStyle(1.5, 0x00f0ff, 1);
+    g.strokeEllipse(isoX, tCenterY - tableElevation, tableW * 2, tableH * 2);
+
+    // Ponto emissor central
     g.fillStyle(0x00f0ff, 1);
-    g.fillCircle(isoX - 5, topY - 14, 3);
+    g.fillCircle(isoX, tCenterY - tableElevation, 3);
+
+    // ==========================================
+    // 4. TORRE DE TRANSMISSÃO E ANTENA PARABÓLICA
+    // ==========================================
+    const towerBaseX = isoX - 16;
+    const towerBaseY = roofY - 10;
+    const towerHeight = 56;
+    const towerTopY = towerBaseY - towerHeight;
+
+    // Treliça metálica estrutural da torre
+    g.lineStyle(2, 0x182d45, 1);
+    g.strokeLineShape(new Phaser.Geom.Line(towerBaseX - 6, towerBaseY, towerBaseX - 2, towerTopY));
+    g.strokeLineShape(new Phaser.Geom.Line(towerBaseX + 6, towerBaseY, towerBaseX + 2, towerTopY));
+    g.strokeLineShape(new Phaser.Geom.Line(towerBaseX - 5, towerBaseY - towerHeight * 0.4, towerBaseX + 5, towerBaseY - towerHeight * 0.4));
+    g.strokeLineShape(new Phaser.Geom.Line(towerBaseX - 3, towerBaseY - towerHeight * 0.7, towerBaseX + 3, towerBaseY - towerHeight * 0.7));
+
+    // Prato da super-antena parabólica
+    g.fillStyle(0x0b1c2e, 1);
+    g.fillEllipse(towerBaseX, towerTopY, 28, 14);
+    g.lineStyle(2, 0x00f0ff, 0.9);
+    g.strokeEllipse(towerBaseX, towerTopY, 28, 14);
+
+    // Emitter focal da parabólica
+    g.lineStyle(2, 0x9d00ff, 1);
+    g.strokeLineShape(new Phaser.Geom.Line(towerBaseX, towerTopY, towerBaseX - 6, towerTopY - 12));
+
+    // Luz de baliza aeronáutica de topo (Beacon ciano pulsante)
+    g.fillStyle(0x00f0ff, 1);
+    g.fillCircle(towerBaseX - 6, towerTopY - 12, 3);
+
+    // Cabos tensores de ancoragem descendo para o terraço
+    g.lineStyle(1, 0x00f0ff, 0.25);
+    g.strokeLineShape(new Phaser.Geom.Line(towerBaseX, towerTopY + 10, isoX - halfW + 10, roofY));
+    g.strokeLineShape(new Phaser.Geom.Line(towerBaseX, towerTopY + 10, isoX, roofY - halfH + 4));
   }
 
   /**
@@ -125,43 +202,46 @@ export class TheNexusSector {
   public update(delta: number) {
     this.holoAngle += delta * 0.002;
     const { x: isoX, y: isoY } = cartesianToIsometric(this.centerX, this.centerY);
-    const holoDepth = calculateIsometricDepth(this.centerX, this.centerY, DepthLayer.STRUCTURE_ROOF);
+    const wallH = 34;
+    const tableElevation = 8;
+    const tCenterY = isoY - wallH - tableElevation;
 
+    const holoDepth = calculateIsometricDepth(this.centerX, this.centerY, DepthLayer.STRUCTURE_ROOF);
     const g = this.holoGraphics;
     g.setDepth(holoDepth);
     g.clear();
 
-    // 1. Projeção Holográfica Translúcida (Anéis em rotação vertical e horizontal)
-    const baseW = 28;
-    const baseH = 14;
-    const holoY = isoY - 16;
+    // 1. Projeção Holográfica Translúcida
+    const baseW = 20;
+    const baseH = 10;
+    const holoY = tCenterY - 12;
 
-    // Cone de luz ascendente
-    g.fillStyle(0x00f0ff, 0.08);
+    // Feixe cônico de luz ascendente
+    g.fillStyle(0x00f0ff, 0.09);
     g.beginPath();
-    g.moveTo(isoX - 10, isoY);
-    g.lineTo(isoX - baseW, holoY - 12);
-    g.lineTo(isoX + baseW, holoY - 12);
-    g.lineTo(isoX + 10, isoY);
+    g.moveTo(isoX - 6, tCenterY);
+    g.lineTo(isoX - baseW, holoY - 14);
+    g.lineTo(isoX + baseW, holoY - 14);
+    g.lineTo(isoX + 6, tCenterY);
     g.closePath();
     g.fillPath();
 
     // Anel holográfico inferior
-    g.lineStyle(1.5, 0x00f0ff, 0.75);
+    g.lineStyle(1.5, 0x00f0ff, 0.85);
     g.strokeEllipse(isoX, holoY, baseW * 2, baseH * 2);
 
     // Anel intermediário oscilante
-    const midH = baseH * (0.6 + Math.sin(this.holoAngle) * 0.3);
-    g.lineStyle(1, 0x39ff14, 0.65);
+    const midH = baseH * (0.6 + Math.sin(this.holoAngle) * 0.35);
+    g.lineStyle(1, 0x39ff14, 0.7);
     g.strokeEllipse(isoX, holoY - 8, baseW * 1.5, Math.abs(midH) * 2);
 
-    // Cubo / Diagrama de dados giratório no centro do holograma
+    // Cubo de dados giratório
     const cubeSize = 8;
     const offsetX = Math.cos(this.holoAngle) * 4;
     const offsetY = Math.sin(this.holoAngle) * 2;
     const cubeY = holoY - 14 + offsetY;
 
-    g.lineStyle(1.5, 0x00f0ff, 0.9);
+    g.lineStyle(1.5, 0x00f0ff, 0.95);
     g.strokeRect(isoX + offsetX - cubeSize / 2, cubeY - cubeSize / 2, cubeSize, cubeSize);
 
     // 2. Ondas concêntricas de despacho
@@ -170,21 +250,19 @@ export class TheNexusSector {
     pg.clear();
 
     if (this.isPulsing) {
-      this.pulseRadius += delta * 0.15;
+      this.pulseRadius += delta * 0.18;
       this.pulseAlpha -= delta * 0.0012;
 
       if (this.pulseAlpha <= 0) {
         this.isPulsing = false;
         this.pulseAlpha = 0;
       } else {
-        // Onda isométrica concêntrica expandindo sobre a cidade
         pg.lineStyle(2, 0x00f0ff, this.pulseAlpha);
         pg.strokeEllipse(isoX, isoY, this.pulseRadius * 2, this.pulseRadius);
 
-        // Onda secundária ligeiramente defasada
-        if (this.pulseRadius > 30) {
-          pg.lineStyle(1, 0x39ff14, this.pulseAlpha * 0.7);
-          pg.strokeEllipse(isoX, isoY, (this.pulseRadius - 20) * 2, this.pulseRadius - 20);
+        if (this.pulseRadius > 35) {
+          pg.lineStyle(1.5, 0x39ff14, this.pulseAlpha * 0.7);
+          pg.strokeEllipse(isoX, isoY, (this.pulseRadius - 24) * 2, this.pulseRadius - 24);
         }
       }
     }
@@ -193,7 +271,6 @@ export class TheNexusSector {
   public destroy() {
     this.baseGraphics.destroy();
     this.holoGraphics.destroy();
-    this.antennaGraphics.destroy();
     this.pulseGraphics.destroy();
   }
 }
