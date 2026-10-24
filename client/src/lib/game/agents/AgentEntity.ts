@@ -35,11 +35,15 @@ export class AgentEntity {
   private sprite: Phaser.GameObjects.Sprite;
   private nameText: Phaser.GameObjects.Text;
   private selectionGraphics: Phaser.GameObjects.Graphics;
+  private packetGraphics: Phaser.GameObjects.Graphics;
   private bubbleContainer: Phaser.GameObjects.Container;
   private bubbleBg: Phaser.GameObjects.Graphics;
   private bubbleText: Phaser.GameObjects.Text;
 
   private isSelected = false;
+  public isCarryingData = false;
+  public autonomousWandering = false;
+  private wanderTimer = 0;
   private walkPath: CartesianPoint[] = [];
   private pathIndex = 0;
   private walkProgress = 0;
@@ -67,7 +71,10 @@ export class AgentEntity {
     // 2. Anel de Seleção Néon sob os pés
     this.selectionGraphics = scene.add.graphics();
 
-    // 3. Label de Nome Flutuante
+    // 3. Pacote de Dados Luminoso (Cubo de Dados)
+    this.packetGraphics = scene.add.graphics();
+
+    // 4. Label de Nome Flutuante
     this.nameText = scene.add.text(isoX, isoY - 38, this.data.name, {
       fontFamily: 'monospace',
       fontSize: '9px',
@@ -77,7 +84,7 @@ export class AgentEntity {
     });
     this.nameText.setOrigin(0.5);
 
-    // 4. Balão de Diálogo e Pensamento (T-4.4)
+    // 5. Balão de Diálogo e Pensamento (T-4.4)
     this.bubbleContainer = scene.add.container(isoX, isoY - 54);
     this.bubbleBg = scene.add.graphics();
     this.bubbleText = scene.add.text(0, 0, '', {
@@ -191,9 +198,27 @@ export class AgentEntity {
     if (this.isSelected) {
       this.renderSelectionRing();
     }
+    this.renderDataPacket(isoX, isoY);
 
     // 5. Z-Sorting dinâmico por tile
     this.updateZDepth();
+  }
+
+  private renderDataPacket(isoX: number, isoY: number) {
+    this.packetGraphics.clear();
+    if (!this.isCarryingData) return;
+
+    const offsetDir = this.direction === 'SE' ? 6 : this.direction === 'SW' ? -6 : 0;
+    const px = isoX + offsetDir;
+    const py = isoY - 14;
+
+    this.packetGraphics.fillStyle(0x00f0ff, 0.95);
+    this.packetGraphics.fillRect(px - 3, py - 3, 6, 6);
+    this.packetGraphics.lineStyle(1, 0xffffff, 0.9);
+    this.packetGraphics.strokeRect(px - 3, py - 3, 6, 6);
+
+    this.packetGraphics.fillStyle(0x00f0ff, 0.4);
+    this.packetGraphics.fillCircle(px, py, 6);
   }
 
   private processWalking(delta: number) {
@@ -267,6 +292,7 @@ export class AgentEntity {
     this.sprite.setDepth(depth);
     this.nameText.setDepth(depth + 2);
     this.selectionGraphics.setDepth(depth - 1);
+    this.packetGraphics.setDepth(depth + 3);
     this.bubbleContainer.setDepth(depth + 10);
   }
 
@@ -274,6 +300,7 @@ export class AgentEntity {
     this.sprite.destroy();
     this.nameText.destroy();
     this.selectionGraphics.destroy();
+    this.packetGraphics.destroy();
     this.bubbleContainer.destroy();
   }
 }

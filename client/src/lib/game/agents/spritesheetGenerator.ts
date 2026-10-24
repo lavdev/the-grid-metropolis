@@ -39,6 +39,13 @@ export const ROLE_THEMES: Record<string, RoleTheme> = {
     accentColor: 0x39ff14,
     skinColor: 0x718096,  // Face sintética cinza
   },
+  SECURITY: {
+    bodyColor: 0x120a0a,  // Armadura tática escura
+    coatColor: 0x240d0d,
+    visorColor: 0xff3b30, // Visor vermelho de segurança
+    accentColor: 0xff3b30,
+    skinColor: 0xdfb49d,
+  },
 };
 
 /**
@@ -47,7 +54,7 @@ export const ROLE_THEMES: Record<string, RoleTheme> = {
  */
 export class ProceduralSpriteGenerator {
   public static ensureAgentTextures(scene: Phaser.Scene) {
-    const roles = ['DEVELOPER', 'RESEARCHER', 'DEVOPS', 'BOT_RUNNER'];
+    const roles = ['DEVELOPER', 'RESEARCHER', 'DEVOPS', 'BOT_RUNNER', 'SECURITY'];
     const directions: AgentDirection[] = ['SW', 'SE', 'NW', 'NE'];
     const frames = ['idle', 'walk_1', 'walk_2', 'work'];
 

@@ -49,7 +49,7 @@ export class MainIsometricScene extends Phaser.Scene {
     this.livingOverlay = new LivingWorldOverlay(this);
 
     // 4. População de Agentes Autônomos e Drones Aéreos (Fase 4)
-    this.agentManager = new AgentManager(this);
+    this.agentManager = new AgentManager(this, this.pathfinder);
 
     // 5. Camadas gráficas de trajetórias e seleções
     this.pathGraphics = this.add.graphics();

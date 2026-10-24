@@ -67,6 +67,7 @@ flowchart TD
 | **T-4.3** | Navegação Espacial de Agentes pelas Passarelas | **Done** ✅ | Alta | T-4.2, T-2.3 | Vincular máquina de estados ao pathfinding para caminhar suavemente até destinos com animação direcional. |
 | **T-4.4** | Sistema de Balões de Diálogo e Ícones Flutuantes | **Done** ✅ | Alta | T-4.2 | Renderizar balões sincronizados com ícones (engrenagens, lâmpadas, códigos) sobre a cabeça dos agentes. |
 | **T-4.5** | Drones Aéreos de Mensageria | **Done** ✅ | Média | T-4.1, T-3.1 | Implementar drones autônomos para transporte aéreo de pacotes de dados entre prédios distantes. |
+| **T-4.6** | Remoção de Figuras Estáticas e População Viva Autônoma | **Done** ✅ | Alta | T-4.1, T-4.3, T-3.7 | Limpar as figuras estáticas ilustradas na arte mestra através de inpainting com OpenCV, liberando as passarelas e plataformas, e implementar rotinas autônomas de deambulação e socialização para agentes e NPCs transeuntes vivos com animação direcional e balões dinâmicos. |
 
 ---
 
