@@ -157,9 +157,7 @@ export class ProjectPodStructure {
 
     // Piso interno em grade cibernética
     g.fillStyle(0x081d13, 0.95);
-    g.beginPath();
-    g.ellipse(isoX, isoY - 20, 36, 18, 0, 0, Math.PI * 2);
-    g.fillPath();
+    g.fillEllipse(isoX, isoY - 20, 72, 36);
 
     // Servidores em Rack com LEDs pulsando
     g.fillStyle(0x050a10, 1);
@@ -194,24 +192,22 @@ export class ProjectPodStructure {
     if (this.isXRayOpen) {
       // Modo X-Ray: Cúpula em aramado holográfico translúcido tênue
       g.lineStyle(1, 0x00f0ff, 0.25);
-      g.strokeEllipse(isoX, domeY, radiusX, radiusY);
+      g.strokeEllipse(isoX, domeY, radiusX * 2, radiusY * 2);
       g.lineStyle(1, 0x00f0ff, 0.15);
-      g.strokeEllipse(isoX, domeY - 14, radiusX * 0.7, radiusY * 0.7);
+      g.strokeEllipse(isoX, domeY - 14, radiusX * 1.4, radiusY * 1.4);
       return;
     }
 
     // Cúpula em vidro reforçado com brilho translúcido
     g.fillStyle(0x0a2638, 0.7);
-    g.beginPath();
-    g.ellipse(isoX, domeY, radiusX, radiusY, 0, 0, Math.PI * 2);
-    g.fillPath();
+    g.fillEllipse(isoX, domeY, radiusX * 2, radiusY * 2);
 
     // Nervuras estruturais da cúpula
     g.lineStyle(2, 0x00f0ff, 0.8);
-    g.strokeEllipse(isoX, domeY, radiusX, radiusY);
+    g.strokeEllipse(isoX, domeY, radiusX * 2, radiusY * 2);
 
     g.lineStyle(1.5, 0x00f0ff, 0.5);
-    g.strokeEllipse(isoX, domeY - 10, radiusX * 0.65, radiusY * 0.65);
+    g.strokeEllipse(isoX, domeY - 10, radiusX * 1.3, radiusY * 1.3);
 
     // Reflexo de luz / Brilho especular no vidro reforçado
     g.lineStyle(2, 0xffffff, 0.5);

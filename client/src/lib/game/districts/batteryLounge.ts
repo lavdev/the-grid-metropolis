@@ -62,12 +62,10 @@ export class BatteryLoungeSector {
 
     // Tampo superior do balcão
     g.fillStyle(0x2d113f, 0.95);
-    g.beginPath();
-    g.ellipse(isoX, isoY - barHeight, barW, barH * 0.7, 0, 0, Math.PI * 2);
-    g.fillPath();
+    g.fillEllipse(isoX, isoY - barHeight, barW * 2, barH * 1.4);
 
     g.lineStyle(1.5, 0x9d00ff, 0.8);
-    g.strokeEllipse(isoX, isoY - barHeight, barW, barH * 0.7);
+    g.strokeEllipse(isoX, isoY - barHeight, barW * 2, barH * 1.4);
 
     // 2. Banquetas metálicas diante do balcão
     const stoolOffsets = [-18, 0, 18];
