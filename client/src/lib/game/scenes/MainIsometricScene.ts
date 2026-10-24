@@ -4,6 +4,7 @@ import { GridPathfinder } from '../pathfinding';
 import { DataOcean } from '../dataOcean';
 import { CityTilesetRenderer } from '../tileset';
 import { TheNexusSector } from '../districts/nexus';
+import { ProjectPodStructure } from '../districts/projectPod';
 import { DepthLayer, calculateIsometricDepth } from '../depth';
 
 export class MainIsometricScene extends Phaser.Scene {
@@ -17,6 +18,7 @@ export class MainIsometricScene extends Phaser.Scene {
   private dataOcean!: DataOcean;
   private tilesetRenderer!: CityTilesetRenderer;
   private nexusSector!: TheNexusSector;
+  private podNotex!: ProjectPodStructure;
   private pathGraphics!: Phaser.GameObjects.Graphics;
   private markerGraphics!: Phaser.GameObjects.Graphics;
 
@@ -48,17 +50,20 @@ export class MainIsometricScene extends Phaser.Scene {
     // 3. Setor The Nexus (Terminal Central de Orquestração, Mesa Holográfica e Antena)
     this.nexusSector = new TheNexusSector(this);
 
-    // 4. Camada gráfica para desenhar trajetórias A* e seleções com Z-sorting correto
+    // 4. Project Pods (Ex: Pod Notex Core na ala leste da cidade)
+    this.podNotex = new ProjectPodStructure(this, 'pod-notex', 'POD: NOTEX CORE', 12, 0);
+
+    // 5. Camada gráfica para desenhar trajetórias A* e seleções com Z-sorting correto
     this.pathGraphics = this.add.graphics();
     this.pathGraphics.setDepth(DepthLayer.PATH_OVERLAY);
 
     this.markerGraphics = this.add.graphics();
     this.markerGraphics.setDepth(DepthLayer.SELECTION_MARKER);
 
-    // 5. Marcações dos Distritos da Cidade
+    // 6. Marcações dos Distritos da Cidade
     this.setupDistrictMarkers();
 
-    // 6. Configura controles interativos de câmera e cliques no mapa
+    // 7. Configura controles interativos de câmera e cliques no mapa
     this.setupCameraControls();
     this.setupMapInteractivity();
 
@@ -67,7 +72,7 @@ export class MainIsometricScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number) {
-    // Atualiza correntes do Data Ocean, pulso dos dutos e holograma do Nexus
+    // Atualiza correntes do Data Ocean, pulso dos dutos, Nexus e Pods
     if (this.dataOcean) {
       this.dataOcean.update(delta);
     }
@@ -76,6 +81,9 @@ export class MainIsometricScene extends Phaser.Scene {
     }
     if (this.nexusSector) {
       this.nexusSector.update(delta);
+    }
+    if (this.podNotex) {
+      this.podNotex.update(delta);
     }
   }
 
@@ -112,6 +120,11 @@ export class MainIsometricScene extends Phaser.Scene {
       // Converte coordenadas do clique para o mundo e em seguida para cartesianas
       const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
       const cartTarget = isometricToCartesian(worldPoint.x, worldPoint.y);
+
+      // Se clicar no Pod Notex (12, 0), alterna a Visão em Corte (X-Ray Cutaway)
+      if (Math.hypot(cartTarget.x - 12, cartTarget.y - 0) <= 2) {
+        this.podNotex.toggleXRay();
+      }
 
       if (this.pathfinder.isWalkable(cartTarget.x, cartTarget.y)) {
         // Se clicar no Nexus (0, 0), dispara o pulso de despacho holográfico

@@ -49,7 +49,7 @@ flowchart TD
 | ID | Tarefa | Status | Prioridade | Dependências | Descrição |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **T-3.1** | Construção do Setor The Nexus | **Done** ✅ | Alta | T-2.4 | Modelar e posicionar a plataforma central octogonal com antena parabólica e mesa holográfica translúcida. |
-| **T-3.2** | Construção dos Project Pods & Domes | Backlog | Alta | T-2.4 | Criar estações modulares temáticas com cúpulas, chaminés com partículas de fumaça colorida e telas de status. |
+| **T-3.2** | Construção dos Project Pods & Domes | **Done** ✅ | Alta | T-2.4 | Criar estações modulares temáticas com cúpulas, chaminés com partículas de fumaça colorida e telas de status. |
 | **T-3.3** | Construção do The Battery Lounge | Backlog | Média | T-2.4 | Montar bar retrofuturista com letreiros néon verticais, balcão iluminado e banquetas para agentes em repouso. |
 | **T-3.4** | Construção do The Glitch Alleys | Backlog | Média | T-2.4 | Renderizar beco de quarentena com cabos expostos, peças desconectadas, estática de monitor e avisos luminosos. |
 | **T-3.5** | Tubulações Luminescentes com Fluxo Bioluminescente | Backlog | Média | T-3.1, T-3.2 | Implementar dutos de vidro no chão transportando partículas de luz animadas simulando tráfego de dados. |
