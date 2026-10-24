@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
-import { cartesianToIsometric, isometricToCartesian, TILE_WIDTH, TILE_HEIGHT } from '../isometric';
-import { GridPathfinder, TileType, CITY_GRID_WIDTH, CITY_GRID_HEIGHT } from '../pathfinding';
+import { cartesianToIsometric, isometricToCartesian } from '../isometric';
+import { GridPathfinder } from '../pathfinding';
+import { DataOcean } from '../dataOcean';
+import { CityTilesetRenderer } from '../tileset';
+import { DepthLayer, calculateIsometricDepth } from '../depth';
 
 export class MainIsometricScene extends Phaser.Scene {
   private isDragging = false;
@@ -10,6 +13,8 @@ export class MainIsometricScene extends Phaser.Scene {
   private cameraStartY = 0;
 
   private pathfinder!: GridPathfinder;
+  private dataOcean!: DataOcean;
+  private tilesetRenderer!: CityTilesetRenderer;
   private pathGraphics!: Phaser.GameObjects.Graphics;
   private markerGraphics!: Phaser.GameObjects.Graphics;
 
@@ -18,7 +23,7 @@ export class MainIsometricScene extends Phaser.Scene {
   }
 
   preload() {
-    // Assets serão carregados na T-2.4 e T-4.1
+    // Assets e Spritesheets adicionais
   }
 
   create() {
@@ -28,20 +33,27 @@ export class MainIsometricScene extends Phaser.Scene {
     this.cameras.main.centerOn(0, 160);
     this.cameras.main.setZoom(0.85);
 
-    // 1. Renderiza o Data Ocean no fundo
-    this.renderDataOcean();
+    // 1. Data Ocean no fundo abissal (-1000 depth) com partículas animadas
+    this.dataOcean = new DataOcean(this);
 
-    // 2. Renderiza a geometria da cidade baseada no Grid de Pathfinding
-    this.renderCityTopology();
+    // 2. Renderizador modular de tileset com laje 3D, bordas de neon e dutos bioluminescentes
+    this.tilesetRenderer = new CityTilesetRenderer(this);
+    this.tilesetRenderer.renderGrid(
+      this.pathfinder.getMatrix(),
+      (mx, my) => this.pathfinder.toCartesianCoord(mx, my)
+    );
 
-    // 3. Camada gráfica para desenhar trajetórias A* e seleções
+    // 3. Camada gráfica para desenhar trajetórias A* e seleções com Z-sorting correto
     this.pathGraphics = this.add.graphics();
-    this.pathGraphics.setDepth(500);
+    this.pathGraphics.setDepth(DepthLayer.PATH_OVERLAY);
 
     this.markerGraphics = this.add.graphics();
-    this.markerGraphics.setDepth(501);
+    this.markerGraphics.setDepth(DepthLayer.SELECTION_MARKER);
 
-    // 4. Configura controles interativos de câmera e cliques no mapa
+    // 4. Marcações dos Distritos da Cidade
+    this.setupDistrictMarkers();
+
+    // 5. Configura controles interativos de câmera e cliques no mapa
     this.setupCameraControls();
     this.setupMapInteractivity();
 
@@ -49,93 +61,17 @@ export class MainIsometricScene extends Phaser.Scene {
     this.scale.on('resize', this.handleResize, this);
   }
 
-  private renderDataOcean() {
-    const graphics = this.add.graphics();
-    graphics.setDepth(-1000);
-
-    // Fundo abissal do mar de dados
-    graphics.fillStyle(0x04060a, 1);
-    graphics.fillRect(-5000, -5000, 10000, 10000);
-
-    // Ondas bioluminescentes no abismo
-    graphics.lineStyle(1, 0x00f0ff, 0.03);
-    for (let x = -4000; x < 4000; x += 160) {
-      graphics.lineBetween(x, -4000, x, 4000);
+  override update(_time: number, delta: number) {
+    // Atualiza correntes do Data Ocean e pulso dos fluidos nos dutos
+    if (this.dataOcean) {
+      this.dataOcean.update(delta);
+    }
+    if (this.tilesetRenderer) {
+      this.tilesetRenderer.update(delta);
     }
   }
 
-  /**
-   * Renderiza os pisos da cidade respeitando estritamente o layout do Pathfinding
-   */
-  private renderCityTopology() {
-    const graphics = this.add.graphics();
-    graphics.setDepth(1);
-
-    const halfW = TILE_WIDTH / 2;
-    const halfH = TILE_HEIGHT / 2;
-    const matrix = this.pathfinder.getMatrix();
-
-    for (let my = 0; my < CITY_GRID_HEIGHT; my++) {
-      for (let mx = 0; mx < CITY_GRID_WIDTH; mx++) {
-        const tile = matrix[my][mx];
-        if (tile === TileType.Abyss) continue; // Pula o abismo vazio
-
-        const cart = this.pathfinder.toCartesianCoord(mx, my);
-        const { x: isoX, y: isoY } = cartesianToIsometric(cart.x, cart.y);
-
-        let fillColor = 0x0d121d;
-        let strokeColor = 0x1e293b;
-        let strokeAlpha = 0.5;
-
-        switch (tile) {
-          case TileType.Nexus:
-            fillColor = 0x0b1e33;
-            strokeColor = 0x00f0ff; // Ciano néon
-            strokeAlpha = 0.7;
-            break;
-          case TileType.Walkway:
-            fillColor = 0x0f1522;
-            strokeColor = 0x9d00ff; // Roxo néon
-            strokeAlpha = 0.6;
-            break;
-          case TileType.Lounge:
-            fillColor = 0x1f142b;
-            strokeColor = 0xff007f; // Magenta néon (Battery Lounge)
-            strokeAlpha = 0.8;
-            break;
-          case TileType.PodEntrance:
-            fillColor = 0x0e241b;
-            strokeColor = 0x39ff14; // Verde néon (Project Pods)
-            strokeAlpha = 0.8;
-            break;
-          case TileType.GlitchAlley:
-            fillColor = 0x241111;
-            strokeColor = 0xff3b30; // Vermelho de alerta (Glitch Alley)
-            strokeAlpha = 0.8;
-            break;
-          case TileType.Obstacle:
-            fillColor = 0x331a00;
-            strokeColor = 0xff9900;
-            strokeAlpha = 0.9;
-            break;
-        }
-
-        // Desenha losango isométrico
-        graphics.fillStyle(fillColor, 0.9);
-        graphics.beginPath();
-        graphics.moveTo(isoX, isoY - halfH);
-        graphics.lineTo(isoX + halfW, isoY);
-        graphics.lineTo(isoX, isoY + halfH);
-        graphics.lineTo(isoX - halfW, isoY);
-        graphics.closePath();
-        graphics.fillPath();
-
-        graphics.lineStyle(1, strokeColor, strokeAlpha);
-        graphics.strokePath();
-      }
-    }
-
-    // Marcações e Labels temáticos dos distritos
+  private setupDistrictMarkers() {
     this.addDistrictMarker(0, 0, 'THE NEXUS', '#00f0ff');
     this.addDistrictMarker(-12, 0, 'BATTERY LOUNGE', '#ff007f');
     this.addDistrictMarker(12, 0, 'POD: NOTEX CORE', '#39ff14');
@@ -146,15 +82,15 @@ export class MainIsometricScene extends Phaser.Scene {
   private addDistrictMarker(cartX: number, cartY: number, title: string, color: string) {
     const { x: isoX, y: isoY } = cartesianToIsometric(cartX, cartY);
 
-    const text = this.add.text(isoX, isoY - 30, title, {
+    const text = this.add.text(isoX, isoY - 32, title, {
       fontFamily: 'monospace',
       fontSize: '11px',
       color,
-      backgroundColor: '#05070cee',
-      padding: { x: 5, y: 2 },
+      backgroundColor: '#040711ee',
+      padding: { x: 6, y: 3 },
     });
     text.setOrigin(0.5);
-    text.setDepth(100);
+    text.setDepth(calculateIsometricDepth(cartX, cartY, DepthLayer.FLOOR_MARKINGS));
   }
 
   /**
@@ -185,11 +121,12 @@ export class MainIsometricScene extends Phaser.Scene {
   private drawTargetMarker(cartX: number, cartY: number) {
     this.markerGraphics.clear();
     const { x: isoX, y: isoY } = cartesianToIsometric(cartX, cartY);
+    this.markerGraphics.setDepth(calculateIsometricDepth(cartX, cartY, DepthLayer.SELECTION_MARKER));
 
     this.markerGraphics.lineStyle(2, 0x00f0ff, 0.9);
-    this.markerGraphics.strokeCircle(isoX, isoY, 16);
-    this.markerGraphics.fillStyle(0x00f0ff, 0.3);
-    this.markerGraphics.fillCircle(isoX, isoY, 8);
+    this.markerGraphics.strokeCircle(isoX, isoY, 18);
+    this.markerGraphics.fillStyle(0x00f0ff, 0.35);
+    this.markerGraphics.fillCircle(isoX, isoY, 7);
   }
 
   /**
@@ -199,6 +136,7 @@ export class MainIsometricScene extends Phaser.Scene {
     this.pathGraphics.clear();
     if (path.length < 2) return;
 
+    this.pathGraphics.setDepth(DepthLayer.PATH_OVERLAY);
     this.pathGraphics.lineStyle(3, 0x39ff14, 0.85); // Linha verde néon
 
     const start = cartesianToIsometric(path[0].x, path[0].y);
