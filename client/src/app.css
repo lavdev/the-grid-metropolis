@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+:root {
+  --neon-cyan: #00f0ff;
+  --neon-purple: #9d00ff;
+  --neon-pink: #ff007f;
+  --neon-green: #39ff14;
+  --panel-bg: rgba(10, 12, 20, 0.88);
+  --panel-border: rgba(0, 240, 255, 0.25);
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #050608;
+  color: #e2e8f0;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  user-select: none;
+}
+
+/* Efeito de scanline sutil para visual retrô-futurista */
+.cyber-scanline {
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.25) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.03),
+    rgba(0, 255, 0, 0.01),
+    rgba(0, 0, 255, 0.03)
+  );
+  background-size: 100% 3px, 6px 100%;
+  pointer-events: none;
+}
+
+/* Brilho neon nos acentos */
+.neon-glow-cyan {
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.2);
+}
+
+.neon-glow-green {
+  box-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
+}
+
+.neon-glow-pink {
+  box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
+}

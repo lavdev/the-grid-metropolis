@@ -420,7 +420,7 @@ pub struct WebSocketEvent {
 | :--- | :--- | :--- |
 | **Renderizador 2D / Canvas** | **Phaser.js** ou **Pixi.js** | Motores com suporte maduro a WebGL, camadas de profundidade (*z-sorting* isométrico), sistemas de partículas para fumaça de néon e troca dinâmica de spritesheets. |
 | **Pathfinding Isométrico** | **EasyStar.js** ou **A\* Customizado** | Cálculo de rotas sobre a matriz de grid 2D sem travamentos, respeitando largura de passarelas, paredes e colisões. |
-| **Camada de Interface UI / HUD** | **Svelte** ou **React** (sobreposto ao Canvas) | Gerenciamento dos painéis de inspeção de agentes, formulários de configuração de tarefas, modais de logs, chat e HUD cyberpunk reativo. |
+| **Camada de Interface UI / HUD** | **Svelte (Vite + TypeScript)** | Reatividade compilada sem Virtual DOM (zero overhead sobre o WebGL), ciclo de vida limpo para instanciar o Canvas, animações nativas fluidas para HUD cyberpunk e bundle ultraleve. |
 | **Backend de Integração (Bridge)** | **Rust (Axum + Tokio)** | Zero pausas de GC, latência de microssegundos para WebSockets, concorrência assíncrona robusta (`tokio::sync::broadcast`), validação de contratos em tempo de compilação com `serde` e binário único ultraleve. |
 | **Comunicação em Tempo Real** | **WebSockets nativos (`axum::extract::ws`)** | Transmissão bidirecional de eventos de baixa latência da nuvem para o navegador do usuário. |
 | **Fila / Gerenciamento de Estado** | **In-Memory (`Arc<RwLock<WorldState>>` + `tokio::sync::broadcast`)** (Redis opcional para clusters multi-nó) | Desacoplamento entre a ingestão das APIs externas e a distribuição de estados visuais na cidade com latência quase nula. |

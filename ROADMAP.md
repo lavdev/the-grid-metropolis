@@ -34,13 +34,13 @@ flowchart TD
 
 ## 2. Fase 2: Motor Isométrico & Renderização 2D (Frontend Canvas)
 
-| ID | Tarefa | Prioridade | Dependências | Descrição |
-| :--- | :--- | :--- | :--- | :--- |
-| **T-2.1** | Setup do Projeto Frontend (Vite + TypeScript) | Alta | Nenhuma | Configurar boilerplate com Vite, TypeScript, Tailwind CSS e base para sobreposição de HUD. |
-| **T-2.2** | Inicialização da Engine Isométrica (Phaser.js) | Alta | T-2.1 | Configurar Phaser 3 no modo WebGL com projeção isométrica 2:1 e viewport dimensionável. |
-| **T-2.3** | Implementação de Grid Isométrico e Pathfinding A* | Alta | T-2.2 | Configurar EasyStar.js / A* sobre a matriz isométrica para rotas nas passarelas sem colisão com paredes ou abismo. |
-| **T-2.4** | Tileset Modular: Passarelas Metálicas e Data Ocean | Alta | T-2.3 | Renderizar malha de passarelas suspensas com bordas iluminadas em ciano/magenta sobre o fundo escuro do Data Ocean. |
-| **T-2.5** | Sistema de Z-Sorting e Profundidade em Camadas | Alta | T-2.4 | Garantir ordenação de profundidade automática (z-index) para prédios, pontes e sprites em movimento. |
+| ID | Tarefa | Status | Prioridade | Dependências | Descrição |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **T-2.1** | Setup do Projeto Frontend (Vite + Svelte + TypeScript) | **Done** ✅ | Alta | Nenhuma | Configurar boilerplate no diretório `client` com Vite, Svelte, TypeScript, Tailwind CSS e base para sobreposição de HUD. |
+| **T-2.2** | Inicialização da Engine Isométrica (Phaser.js) | Backlog | Alta | T-2.1 | Configurar Phaser 3 no modo WebGL com projeção isométrica 2:1 e viewport dimensionável. |
+| **T-2.3** | Implementação de Grid Isométrico e Pathfinding A* | Backlog | Alta | T-2.2 | Configurar EasyStar.js / A* sobre a matriz isométrica para rotas nas passarelas sem colisão com paredes ou abismo. |
+| **T-2.4** | Tileset Modular: Passarelas Metálicas e Data Ocean | Backlog | Alta | T-2.3 | Renderizar malha de passarelas suspensas com bordas iluminadas em ciano/magenta sobre o fundo escuro do Data Ocean. |
+| **T-2.5** | Sistema de Z-Sorting e Profundidade em Camadas | Backlog | Alta | T-2.4 | Garantir ordenação de profundidade automática (z-index) para prédios, pontes e sprites em movimento. |
 
 ---
 
