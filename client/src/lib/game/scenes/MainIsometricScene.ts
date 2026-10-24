@@ -2,11 +2,7 @@ import Phaser from 'phaser';
 import { cartesianToIsometric, isometricToCartesian } from '../isometric';
 import { GridPathfinder } from '../pathfinding';
 import { DataOcean } from '../dataOcean';
-import { CityTilesetRenderer } from '../tileset';
-import { TheNexusSector } from '../districts/nexus';
-import { ProjectPodStructure } from '../districts/projectPod';
-import { BatteryLoungeSector } from '../districts/batteryLounge';
-import { GlitchAlleySector } from '../districts/glitchAlley';
+import { LivingWorldOverlay } from '../world/LivingWorldOverlay';
 import { AgentManager } from '../agents/AgentManager';
 import { DepthLayer, calculateIsometricDepth } from '../depth';
 
@@ -19,11 +15,8 @@ export class MainIsometricScene extends Phaser.Scene {
 
   private pathfinder!: GridPathfinder;
   private dataOcean!: DataOcean;
-  private tilesetRenderer!: CityTilesetRenderer;
-  private nexusSector!: TheNexusSector;
-  private podNotex!: ProjectPodStructure;
-  private loungeSector!: BatteryLoungeSector;
-  private glitchSector!: GlitchAlleySector;
+  private cityMasterImage!: Phaser.GameObjects.Image;
+  private livingOverlay!: LivingWorldOverlay;
   private agentManager!: AgentManager;
   private pathGraphics!: Phaser.GameObjects.Graphics;
   private markerGraphics!: Phaser.GameObjects.Graphics;
@@ -33,52 +26,39 @@ export class MainIsometricScene extends Phaser.Scene {
   }
 
   preload() {
-    // Assets e Spritesheets adicionais
+    // Carrega a arte conceitual mestra oficial de alta fidelidade
+    this.load.image('city_master', 'assets/the_grid_metropolis_master.jpg');
   }
 
   create() {
     this.pathfinder = new GridPathfinder();
 
-    // Centraliza a câmera no Nexus com zoom padrão
-    this.cameras.main.centerOn(0, 160);
-    this.cameras.main.setZoom(0.85);
+    // Centraliza a câmera no Nexus com zoom imersivo
+    this.cameras.main.centerOn(0, 0);
+    this.cameras.main.setZoom(1.15);
 
-    // 1. Data Ocean no fundo abissal (-1000 depth) com partículas animadas
+    // 1. Data Ocean no fundo abissal (-100000 depth) com partículas animadas
     this.dataOcean = new DataOcean(this);
 
-    // 2. Renderizador modular de tileset com laje 3D, bordas de neon e dutos bioluminescentes
-    this.tilesetRenderer = new CityTilesetRenderer(this);
-    this.tilesetRenderer.renderGrid(
-      this.pathfinder.getMatrix(),
-      (mx, my) => this.pathfinder.toCartesianCoord(mx, my)
-    );
+    // 2. Base Arquitetônica Mestra em Alta Fidelidade (Arte Oficial da Metrópole)
+    this.cityMasterImage = this.add.image(0, 0, 'city_master');
+    this.cityMasterImage.setOrigin(0.5, 0.5);
+    this.cityMasterImage.setDepth(0); // Acima do mar abissal, abaixo dos efeitos dinâmicos
 
-    // 3. Setor The Nexus (Terminal Central de Orquestração, Mesa Holográfica e Antena)
-    this.nexusSector = new TheNexusSector(this);
+    // 3. Camada de Cenografia Viva (Fumaça nas chaminés, holograma giratório, telas e cabos)
+    this.livingOverlay = new LivingWorldOverlay(this);
 
-    // 4. Project Pods (Ex: Pod Notex Core na ala leste da cidade)
-    this.podNotex = new ProjectPodStructure(this, 'pod-notex', 'POD: NOTEX CORE', 12, 0);
-
-    // 5. The Battery Lounge (Área de Ociosidade & Recarga na ala oeste)
-    this.loungeSector = new BatteryLoungeSector(this, -12, 0);
-
-    // 6. The Glitch Alleys (Área de Quarentena & Debug na ala norte)
-    this.glitchSector = new GlitchAlleySector(this, 0, -12);
-
-    // 7. Gerenciador de Agentes e População da Metrópole (Fase 4)
+    // 4. População de Agentes Autônomos e Drones Aéreos (Fase 4)
     this.agentManager = new AgentManager(this);
 
-    // 8. Camada gráfica para desenhar trajetórias A* e seleções com Z-sorting correto
+    // 5. Camadas gráficas de trajetórias e seleções
     this.pathGraphics = this.add.graphics();
     this.pathGraphics.setDepth(DepthLayer.PATH_OVERLAY);
 
     this.markerGraphics = this.add.graphics();
     this.markerGraphics.setDepth(DepthLayer.SELECTION_MARKER);
 
-    // 9. Marcações dos Distritos da Cidade
-    this.setupDistrictMarkers();
-
-    // 10. Configura controles interativos de câmera e cliques no mapa
+    // 6. Controles interativos de câmera e cliques no mapa
     this.setupCameraControls();
     this.setupMapInteractivity();
 
@@ -87,80 +67,37 @@ export class MainIsometricScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number) {
-    // Atualiza correntes do Data Ocean, pulso dos dutos, distritos e agentes
+    // Atualiza correntes do Data Ocean
     if (this.dataOcean) {
       this.dataOcean.update(delta);
     }
-    if (this.tilesetRenderer) {
-      this.tilesetRenderer.update(delta);
+
+    // Atualiza vida da cidade (fumaça, hologramas, luzes)
+    if (this.livingOverlay) {
+      this.livingOverlay.update(delta);
     }
-    if (this.nexusSector) {
-      this.nexusSector.update(delta);
-    }
-    if (this.podNotex) {
-      this.podNotex.update(delta);
-    }
-    if (this.loungeSector) {
-      this.loungeSector.update(delta);
-    }
-    if (this.glitchSector) {
-      this.glitchSector.update(delta);
-    }
+
+    // Atualiza agentes e drones
     if (this.agentManager) {
       this.agentManager.update(delta);
     }
   }
 
-  private setupDistrictMarkers() {
-    this.addDistrictMarker(0, 0, 'THE NEXUS', '#00f0ff');
-    this.addDistrictMarker(-12, 0, 'BATTERY LOUNGE', '#ff007f');
-    this.addDistrictMarker(12, 0, 'POD: NOTEX CORE', '#39ff14');
-    this.addDistrictMarker(0, -12, 'GLITCH ALLEY', '#ff3b30');
-    this.addDistrictMarker(0, 12, 'EXPANSION BAY', '#00f0ff');
-  }
-
-  private addDistrictMarker(cartX: number, cartY: number, title: string, color: string) {
-    const { x: isoX, y: isoY } = cartesianToIsometric(cartX, cartY);
-
-    const text = this.add.text(isoX, isoY - 32, title, {
-      fontFamily: 'monospace',
-      fontSize: '11px',
-      color,
-      backgroundColor: '#040711ee',
-      padding: { x: 6, y: 3 },
-    });
-    text.setOrigin(0.5);
-    text.setDepth(calculateIsometricDepth(cartX, cartY, DepthLayer.FLOOR_MARKINGS));
-  }
-
-  /**
-   * Configura clique no mapa para demonstrar o cálculo de rota A* em tempo real
-   */
   private setupMapInteractivity() {
     this.input.on('pointerdown', async (pointer: Phaser.Input.Pointer) => {
-      // Se estava arrastando, ignora cálculo de rota
       if (pointer.rightButtonDown() || pointer.getDistance() > 10) return;
 
-      // Converte coordenadas do clique para o mundo e em seguida para cartesianas
       const worldPoint = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
       const cartTarget = isometricToCartesian(worldPoint.x, worldPoint.y);
 
-      // Se clicar no Pod Notex (12, 0), alterna a Visão em Corte (X-Ray Cutaway)
-      if (Math.hypot(cartTarget.x - 12, cartTarget.y - 0) <= 2) {
-        this.podNotex.toggleXRay();
+      // Clicar no Nexus (centro) dispara o pulso holográfico de despacho
+      if (Math.hypot(worldPoint.x - 3, worldPoint.y - 2) <= 45) {
+        this.livingOverlay.triggerNexusPulse();
       }
 
       if (this.pathfinder.isWalkable(cartTarget.x, cartTarget.y)) {
-        // Se clicar no Nexus (0, 0), dispara o pulso de despacho holográfico e sobretensão nos dutos
-        if (Math.abs(cartTarget.x) <= 1 && Math.abs(cartTarget.y) <= 1) {
-          this.nexusSector.triggerDispatchPulse();
-          this.tilesetRenderer.triggerConduitSurge(0x00f0ff);
-        }
-
-        // Marca o destino com feedback visual néon
         this.drawTargetMarker(cartTarget.x, cartTarget.y);
 
-        // Despacha o agente selecionado para caminhar pelo grid A*
         const activeAgent = this.agentManager.getSelectedAgent();
         const startPoint = activeAgent
           ? { x: Math.round(activeAgent.cartX), y: Math.round(activeAgent.cartY) }
@@ -187,15 +124,12 @@ export class MainIsometricScene extends Phaser.Scene {
     this.markerGraphics.fillCircle(isoX, isoY, 7);
   }
 
-  /**
-   * Desenha a trajetória calculada pelo A* com traçado néon conectando os pontos
-   */
   private drawAStarPath(path: Array<{ x: number; y: number }>) {
     this.pathGraphics.clear();
     if (path.length < 2) return;
 
     this.pathGraphics.setDepth(DepthLayer.PATH_OVERLAY);
-    this.pathGraphics.lineStyle(3, 0x39ff14, 0.85); // Linha verde néon
+    this.pathGraphics.lineStyle(2.5, 0x39ff14, 0.85);
 
     const start = cartesianToIsometric(path[0].x, path[0].y);
     this.pathGraphics.beginPath();
@@ -205,14 +139,12 @@ export class MainIsometricScene extends Phaser.Scene {
       const p = cartesianToIsometric(path[i].x, path[i].y);
       this.pathGraphics.lineTo(p.x, p.y);
     }
-
     this.pathGraphics.strokePath();
 
-    // Desenha pequenas luzes em cada nó do caminho
-    this.pathGraphics.fillStyle(0x00f0ff, 0.9);
+    this.pathGraphics.fillStyle(0x00f0ff, 0.95);
     for (const node of path) {
       const p = cartesianToIsometric(node.x, node.y);
-      this.pathGraphics.fillCircle(p.x, p.y, 3);
+      this.pathGraphics.fillCircle(p.x, p.y, 2.5);
     }
   }
 
@@ -240,7 +172,7 @@ export class MainIsometricScene extends Phaser.Scene {
 
     this.input.on('wheel', (_pointer: Phaser.Input.Pointer, _gameObjects: any, _deltaX: number, deltaY: number) => {
       const zoomFactor = deltaY > 0 ? 0.9 : 1.1;
-      const newZoom = Phaser.Math.Clamp(this.cameras.main.zoom * zoomFactor, 0.35, 2.2);
+      const newZoom = Phaser.Math.Clamp(this.cameras.main.zoom * zoomFactor, 0.45, 2.5);
       this.cameras.main.setZoom(newZoom);
     });
   }

@@ -56,7 +56,7 @@ export class ProceduralSpriteGenerator {
 
       for (const dir of directions) {
         for (const frame of frames) {
-          const textureKey = `agent_${role.toLowerCase()}_${dir}_${frame}`;
+          const textureKey = `agent_${role.toLowerCase()}_${dir.toLowerCase()}_${frame}`;
           if (!scene.textures.exists(textureKey)) {
             this.generateCharacterFrame(scene, textureKey, theme, dir, frame);
           }

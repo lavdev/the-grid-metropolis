@@ -54,6 +54,7 @@ flowchart TD
 | **T-3.4** | Construção do The Glitch Alleys | **Done** ✅ | Média | T-2.4 | Renderizar beco de quarentena com cabos expostos, peças desconectadas, estática de monitor e avisos luminosos. |
 | **T-3.5** | Tubulações Luminescentes com Fluxo Bioluminescente | **Done** ✅ | Média | T-3.1, T-3.2 | Implementar dutos de vidro no chão transportando partículas de luz animadas simulando tráfego de dados. |
 | **T-3.6** | Arquitetura e Modelagem Volumétrica das Edificações | **Done** ✅ | Alta | T-3.1, T-3.2, T-3.3, T-3.4 | Construir as edificações completas com volumetria isométrica 2:1, paredes de múltiplos pavimentos, janelas com iluminação de dados, telhados detalhados, marquises néon e estruturas arquitetônicas imponentes. |
+| **T-3.7** | Integração da Cenografia Viva Mestra e Efeitos Hiperdetalhados | **Done** ✅ | Alta | T-3.6 | Integrar a arte conceitual mestra oficial de The Grid Metropolis como base arquitetônica de alta fidelidade no Phaser, calibrando a malha de pathfinding A*, partículas de fumaça viva nas chaminés, telas holográficas dinâmicas, cabos com pulsos de luz e interatividade dos distritos. |
 
 ---
 
