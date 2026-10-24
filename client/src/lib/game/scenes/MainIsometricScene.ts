@@ -3,6 +3,7 @@ import { cartesianToIsometric, isometricToCartesian } from '../isometric';
 import { GridPathfinder } from '../pathfinding';
 import { DataOcean } from '../dataOcean';
 import { CityTilesetRenderer } from '../tileset';
+import { TheNexusSector } from '../districts/nexus';
 import { DepthLayer, calculateIsometricDepth } from '../depth';
 
 export class MainIsometricScene extends Phaser.Scene {
@@ -15,6 +16,7 @@ export class MainIsometricScene extends Phaser.Scene {
   private pathfinder!: GridPathfinder;
   private dataOcean!: DataOcean;
   private tilesetRenderer!: CityTilesetRenderer;
+  private nexusSector!: TheNexusSector;
   private pathGraphics!: Phaser.GameObjects.Graphics;
   private markerGraphics!: Phaser.GameObjects.Graphics;
 
@@ -43,17 +45,20 @@ export class MainIsometricScene extends Phaser.Scene {
       (mx, my) => this.pathfinder.toCartesianCoord(mx, my)
     );
 
-    // 3. Camada gráfica para desenhar trajetórias A* e seleções com Z-sorting correto
+    // 3. Setor The Nexus (Terminal Central de Orquestração, Mesa Holográfica e Antena)
+    this.nexusSector = new TheNexusSector(this);
+
+    // 4. Camada gráfica para desenhar trajetórias A* e seleções com Z-sorting correto
     this.pathGraphics = this.add.graphics();
     this.pathGraphics.setDepth(DepthLayer.PATH_OVERLAY);
 
     this.markerGraphics = this.add.graphics();
     this.markerGraphics.setDepth(DepthLayer.SELECTION_MARKER);
 
-    // 4. Marcações dos Distritos da Cidade
+    // 5. Marcações dos Distritos da Cidade
     this.setupDistrictMarkers();
 
-    // 5. Configura controles interativos de câmera e cliques no mapa
+    // 6. Configura controles interativos de câmera e cliques no mapa
     this.setupCameraControls();
     this.setupMapInteractivity();
 
@@ -62,12 +67,15 @@ export class MainIsometricScene extends Phaser.Scene {
   }
 
   override update(_time: number, delta: number) {
-    // Atualiza correntes do Data Ocean e pulso dos fluidos nos dutos
+    // Atualiza correntes do Data Ocean, pulso dos dutos e holograma do Nexus
     if (this.dataOcean) {
       this.dataOcean.update(delta);
     }
     if (this.tilesetRenderer) {
       this.tilesetRenderer.update(delta);
+    }
+    if (this.nexusSector) {
+      this.nexusSector.update(delta);
     }
   }
 
@@ -106,6 +114,11 @@ export class MainIsometricScene extends Phaser.Scene {
       const cartTarget = isometricToCartesian(worldPoint.x, worldPoint.y);
 
       if (this.pathfinder.isWalkable(cartTarget.x, cartTarget.y)) {
+        // Se clicar no Nexus (0, 0), dispara o pulso de despacho holográfico
+        if (Math.abs(cartTarget.x) <= 1 && Math.abs(cartTarget.y) <= 1) {
+          this.nexusSector.triggerDispatchPulse();
+        }
+
         // Marca o destino com feedback visual néon
         this.drawTargetMarker(cartTarget.x, cartTarget.y);
 
