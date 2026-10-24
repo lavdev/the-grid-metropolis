@@ -1,6 +1,8 @@
 use std::net::SocketAddr;
 use axum::{routing::get, Json, Router};
 use serde_json::{json, Value};
+use server::api::api_routes;
+use server::state::create_shared_state;
 use tower_http::cors::{Any, CorsLayer};
 use tracing::{info, Level};
 use tracing_subscriber::FmtSubscriber;
@@ -20,9 +22,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .allow_methods(Any)
         .allow_headers(Any);
 
-    // Roteador inicial da aplicação
+    // Inicializa o estado compartilhado da simulação em memória
+    let shared_state = create_shared_state();
+
+    // Roteador consolidado da aplicação
     let app = Router::new()
         .route("/health", get(health_check))
+        .merge(api_routes(shared_state))
         .layer(cors);
 
     let port: u16 = std::env::var("PORT")
@@ -31,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or(3000);
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    info!("🚀 The Grid Metropolis Bridge Server iniciando em http://{}", addr);
+    info!("🚀 The Grid Metropolis Bridge Server ativo em http://{}", addr);
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
