@@ -17,7 +17,8 @@ use server::state::create_shared_state;
 #[tokio::test]
 async fn test_full_bridge_dispatch_and_websocket_stream_e2e() {
     let state = create_shared_state();
-    let app = Router::new().merge(api_routes(state.clone()));
+    let db = server::db::Database::init(":memory:").unwrap();
+    let app = Router::new().merge(api_routes(state.clone(), db));
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
         .await

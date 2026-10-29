@@ -30,62 +30,42 @@ export function buildCityGridMatrix(): number[][] {
     matrix.push(row);
   }
 
-  // 1. Constrói The Nexus (Plataforma octogonal central)
-  for (let cy = -4; cy <= 4; cy++) {
-    for (let cx = -4; cx <= 4; cx++) {
-      if (Math.abs(cx) + Math.abs(cy) <= 6) {
-        setTile(matrix, cx, cy, TileType.Nexus);
-      }
+  // 1. The War Room / Nexus (Plataforma elevada ao Norte)
+  for (let cy = -9; cy <= -1; cy++) {
+    for (let cx = -9; cx <= -1; cx++) {
+      setTile(matrix, cx, cy, TileType.Nexus);
     }
   }
 
-  // 2. Passarelas Cardeais Principais (Eixo X e Eixo Y com 2 tiles de largura para tráfego duplo)
-  for (let x = -15; x <= 15; x++) {
+  // 2. The Dev Lab (Sala Oeste com bancadas de computadores e cadeiras gamer)
+  for (let cy = 2; cy <= 13; cy++) {
+    for (let cx = -10; cx <= 0; cx++) {
+      setTile(matrix, cx, cy, TileType.PodEntrance);
+    }
+  }
+
+  // 3. The Cyber Breakroom & Arcades (Sala Leste com fliperamas, sofá e máquina de café)
+  for (let cy = -11; cy <= 0; cy++) {
+    for (let cx = 1; cx <= 10; cx++) {
+      setTile(matrix, cx, cy, TileType.Lounge);
+    }
+  }
+
+  // 4. The Server Vault (Sala Sul com racks de servidores e iluminação cibernética)
+  for (let cy = 2; cy <= 8; cy++) {
+    for (let cx = 1; cx <= 8; cx++) {
+      setTile(matrix, cx, cy, TileType.GlitchAlley);
+    }
+  }
+
+  // 5. Passarelas e eixos de tráfego que interligam todos os distritos
+  for (let x = -10; x <= 10; x++) {
     setTile(matrix, x, 0, TileType.Walkway);
     setTile(matrix, x, 1, TileType.Walkway);
   }
-  for (let y = -15; y <= 15; y++) {
+  for (let y = -11; y <= 11; y++) {
     setTile(matrix, 0, y, TileType.Walkway);
     setTile(matrix, 1, y, TileType.Walkway);
-  }
-
-  // 3. Anel Periférico de Conexão (Passarela circular conectando os 4 distritos)
-  for (let i = -12; i <= 12; i++) {
-    setTile(matrix, i, -12, TileType.Walkway);
-    setTile(matrix, i, 12, TileType.Walkway);
-    setTile(matrix, -12, i, TileType.Walkway);
-    setTile(matrix, 12, i, TileType.Walkway);
-  }
-
-  // 4. Distrito Oeste (-12, 0): The Battery Lounge (Plataforma 5x5)
-  for (let ly = -2; ly <= 2; ly++) {
-    for (let lx = -14; lx <= -10; lx++) {
-      setTile(matrix, lx, ly, TileType.Lounge);
-    }
-  }
-
-  // 5. Distrito Leste (+12, 0): Project Pod Notex Core (Plataforma 5x5)
-  for (let py = -2; py <= 2; py++) {
-    for (let px = 10; px <= 14; px++) {
-      setTile(matrix, px, py, TileType.PodEntrance);
-    }
-  }
-
-  // 6. Distrito Norte (0, -12): The Glitch Alleys (Área de quarentena com obstáculos)
-  for (let gy = -14; gy <= -10; gy++) {
-    for (let gx = -2; gx <= 2; gx++) {
-      setTile(matrix, gx, gy, TileType.GlitchAlley);
-    }
-  }
-  // Coloca alguns obstáculos intencionais (peças soltas / fios) no Glitch Alley
-  setTile(matrix, -1, -13, TileType.Obstacle);
-  setTile(matrix, 1, -11, TileType.Obstacle);
-
-  // 7. Distrito Sul (0, +12): Plataforma Modular de Expansão Contínua
-  for (let sy = 10; sy <= 14; sy++) {
-    for (let sx = -2; sx <= 2; sx++) {
-      setTile(matrix, sx, sy, TileType.PodEntrance);
-    }
   }
 
   return matrix;

@@ -5,6 +5,7 @@ import { DataOcean } from '../dataOcean';
 import { LivingWorldOverlay } from '../world/LivingWorldOverlay';
 import { AgentManager } from '../agents/AgentManager';
 import { DepthLayer, calculateIsometricDepth } from '../depth';
+import { gameBridge } from '../gameBridge';
 
 export class MainIsometricScene extends Phaser.Scene {
   private isDragging = false;
@@ -50,6 +51,7 @@ export class MainIsometricScene extends Phaser.Scene {
 
     // 4. População de Agentes Autônomos e Drones Aéreos (Fase 4)
     this.agentManager = new AgentManager(this, this.pathfinder);
+    gameBridge.registerScene(this);
 
     // 5. Camadas gráficas de trajetórias e seleções
     this.pathGraphics = this.add.graphics();

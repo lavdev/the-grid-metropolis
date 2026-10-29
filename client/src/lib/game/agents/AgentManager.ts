@@ -11,26 +11,28 @@ interface WaypointHub {
 }
 
 const HUBS: WaypointHub[] = [
-  { name: 'The Nexus', x: 0, y: 0 },
-  { name: 'The Battery Lounge', x: -11, y: 0 },
-  { name: 'Pod Notex Core', x: 11, y: 0 },
-  { name: 'Glitch Alleys', x: 0, y: -10 },
-  { name: 'Expansion Bay', x: 0, y: 10 },
-  { name: 'Passarela Leste', x: 6, y: 0 },
-  { name: 'Passarela Oeste', x: -6, y: 0 },
+  { name: 'The War Room (Nexus)', x: -4, y: -4 },
+  { name: 'The Dev Lab (Mesa Principal)', x: -3, y: 7 },
+  { name: 'The Dev Lab (Mesa Secundária)', x: -4, y: 5 },
+  { name: 'The Dev Lab (Whiteboard)', x: -5, y: 3 },
+  { name: 'Cyber Breakroom & Arcades', x: 3, y: -7 },
+  { name: 'Máquina de Café', x: 2, y: -9 },
+  { name: 'Cyber Sofa Lounge', x: 8, y: -4 },
+  { name: 'The Server Vault', x: 4, y: 5 },
+  { name: 'Passarela Central', x: 0, y: 0 },
 ];
 
 const AMBIENT_PHRASES = [
-  '☕ Partiu tomar algo no Battery Lounge!',
-  '⚡ Bateria em 100%!',
-  '💻 Compilando kernel Rust assíncrono...',
-  '⚙️ Pipeline CI/CD totalmente verde!',
-  '😊 Salve! O Grid está a todo vapor hoje!',
-  '📦 Entregando pacote de dados ao Nexus!',
-  '⚠️ Monitorando anomalias na rede...',
-  '🍸 Experimentando o novo drink sintético!',
-  '🔍 Auditando contratos de execução...',
-  '🌐 Sincronizado com o Bridge Hub!',
+  '☕ Pegando um expresso duplo no Breakroom...',
+  '🕹️ Quem topa um round no fliperama retrô?',
+  '💻 Analisando o whiteboard de arquitetura...',
+  '⚡ Datacenter com refrigeração líquida em 100%!',
+  '🔍 Debugando memory leak no Dev Lab...',
+  '⚙️ Pipeline CI/CD totalmente verde no cluster!',
+  '🍸 Sofá do lounge tá excelente pra pensar!',
+  '📦 Sincronizando pacote de dados com o Nexus!',
+  '🛡️ Monitorando anomalias no Server Vault...',
+  '🌐 Pronto para a próxima instrução do Arquiteto!',
 ];
 
 /**
@@ -67,8 +69,8 @@ export class AgentManager {
         name: 'Rusty',
         role: 'DEVELOPER',
         homePodId: 'pod-notex',
-        cartX: 1,
-        cartY: 1,
+        cartX: 0,
+        cartY: 0,
         status: 'IDLE',
         accentColor: '#00f0ff',
       },
@@ -77,8 +79,8 @@ export class AgentManager {
         name: 'Dr. Cipher',
         role: 'RESEARCHER',
         homePodId: 'pod-notex',
-        cartX: -6,
-        cartY: 0,
+        cartX: -4,
+        cartY: -4,
         status: 'IDLE',
         accentColor: '#9d00ff',
       },
@@ -87,8 +89,8 @@ export class AgentManager {
         name: 'Unit-7',
         role: 'BOT_RUNNER',
         homePodId: 'pod-notex',
-        cartX: 8,
-        cartY: 0,
+        cartX: 3,
+        cartY: -7,
         status: 'IDLE',
         accentColor: '#39ff14',
       },
@@ -97,8 +99,8 @@ export class AgentManager {
         name: 'Nova',
         role: 'DEVELOPER',
         homePodId: 'pod-notex',
-        cartX: 0,
-        cartY: 7,
+        cartX: -4,
+        cartY: 5,
         status: 'IDLE',
         accentColor: '#ff9900',
       },
@@ -107,8 +109,8 @@ export class AgentManager {
         name: 'Kaelen',
         role: 'RESEARCHER',
         homePodId: 'pod-notex',
-        cartX: -11,
-        cartY: 0,
+        cartX: -5,
+        cartY: 3,
         status: 'IDLE',
         accentColor: '#ff007f',
       },
@@ -117,8 +119,8 @@ export class AgentManager {
         name: 'Vanguard',
         role: 'SECURITY',
         homePodId: 'pod-notex',
-        cartX: 0,
-        cartY: -8,
+        cartX: 4,
+        cartY: 5,
         status: 'IDLE',
         accentColor: '#ff3b30',
       },
@@ -179,15 +181,15 @@ export class AgentManager {
 
     await agent.walkTo(cartX, cartY, pathfinder);
 
-    // Mensagens contextuais dependendo do distrito
-    if (Math.hypot(cartX - (-12), cartY - 0) <= 2) {
-      agent.say('Indo relaxar no Battery Lounge... 🍸');
-    } else if (Math.hypot(cartX - 12, cartY - 0) <= 2) {
-      agent.say('A caminho do Pod Notex Core! ⚙️');
-    } else if (Math.hypot(cartX - 0, cartY - (-12)) <= 2) {
-      agent.say('Setor de Quarentena: depurando erros! ⚠️');
-    } else if (Math.hypot(cartX - 0, cartY - 0) <= 2) {
-      agent.say('Retornando ao Nexus para sincronizar! 🌐');
+    // Mensagens contextuais dependendo da sala
+    if (cartX <= -4) {
+      agent.say('A caminho da bancada no Dev Lab! 💻');
+    } else if (cartX >= 4) {
+      agent.say('Pausa rápida no Breakroom & Arcades! 🕹️');
+    } else if (cartY >= 3) {
+      agent.say('Inspecionando os racks no Server Vault! ⚡');
+    } else {
+      agent.say('Reunindo na mesa holográfica do War Room! 🌐');
     }
   }
 

@@ -22,13 +22,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .allow_methods(Any)
         .allow_headers(Any);
 
+    // Inicializa o banco de dados relacional SQLite local
+    let db = server::db::Database::init(server::db::Database::default_db_path())?;
+
     // Inicializa o estado compartilhado da simulação em memória
     let shared_state = create_shared_state();
 
     // Roteador consolidado da aplicação
     let app = Router::new()
         .route("/health", get(health_check))
-        .merge(api_routes(shared_state))
+        .merge(api_routes(shared_state, db))
         .layer(cors);
 
     let port: u16 = std::env::var("PORT")

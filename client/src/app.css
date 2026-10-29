@@ -48,3 +48,18 @@ html, body {
 .neon-glow-pink {
   box-shadow: 0 0 15px rgba(255, 0, 127, 0.4);
 }
+
+/* Fontes Pixel Art do Conceito */
+.font-pixel-title {
+  font-family: 'Silkscreen', 'Press Start 2P', monospace;
+  letter-spacing: 0.05em;
+}
+
+.font-pixel-terminal {
+  font-family: 'VT323', monospace;
+  letter-spacing: 0.04em;
+}
+
+.font-pixelify {
+  font-family: 'Pixelify Sans', monospace;
+}

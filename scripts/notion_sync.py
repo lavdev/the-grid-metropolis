@@ -64,14 +64,19 @@ def query_tasks(search_term=None):
             results.append({"page_id": page_id, "id": tid, "title": title, "status": status, "phase": phase})
         return results
 
-def update_task_status(page_id, new_status):
+def update_task_status(page_id, new_status, title=None):
     url = f"https://api.notion.com/v1/pages/{page_id}"
-    payload = {
-        "properties": {
-            "Status": {
-                "status": {"name": new_status}
-            }
+    props = {
+        "Status": {
+            "status": {"name": new_status}
         }
+    }
+    if title:
+        props["Tarefa"] = {
+            "title": [{"text": {"content": title}}]
+        }
+    payload = {
+        "properties": props
     }
     req = urllib.request.Request(url, headers=HEADERS, data=json.dumps(payload).encode('utf-8'), method="PATCH")
     with urllib.request.urlopen(req) as resp:
@@ -126,14 +131,24 @@ if __name__ == "__main__":
         elif cmd == "update" and len(sys.argv) > 3:
             target_id = sys.argv[2]
             new_status = sys.argv[3]
+            new_title = sys.argv[4] if len(sys.argv) > 4 else None
             items = query_tasks(target_id)
             matched = [it for it in items if it["id"].strip().upper() == target_id.strip().upper()]
             if not matched:
                 print(f"Task with ID {target_id} not found.")
             else:
                 for it in matched:
-                    res = update_task_status(it["page_id"], new_status)
-                    print(f"Updated {it['id']} ({it['title']}) to status '{new_status}'.")
+                    res = update_task_status(it["page_id"], new_status, new_title)
+                    print(f"Updated {it['id']} to status '{new_status}' (title: {new_title or it['title']}).")
+        elif cmd == "create" and len(sys.argv) > 7:
+            tid = sys.argv[2]
+            title = sys.argv[3]
+            phase = sys.argv[4]
+            priority = sys.argv[5]
+            deps = sys.argv[6]
+            desc = sys.argv[7]
+            pid = create_task(tid, title, phase, priority, deps, desc)
+            print(f"Created task {tid} in Notion with Page ID: {pid}")
         elif cmd == "list":
             items = query_tasks()
             print(f"Total tasks: {len(items)}")

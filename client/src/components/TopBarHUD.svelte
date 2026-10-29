@@ -4,6 +4,7 @@
   import { Activity, Cpu, Radio, Shield, Terminal } from '@lucide/svelte';
 
   export let connectionStatus: ConnectionState = 'DISCONNECTED';
+  export let onSwitchToTerminal: () => void = () => {};
 
   $: totalAgents = $agents.length;
   $: activeAgents = $agents.filter((a) => a.status === 'WORKING' || a.status === 'WALKING').length;
@@ -60,5 +61,15 @@
         <span class="text-rose-400 font-semibold text-[11px]">OFFLINE</span>
       {/if}
     </div>
+
+    <!-- Botão de Acesso Rápido ao Terminal CRT -->
+    <button
+      on:click={onSwitchToTerminal}
+      class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 font-bold transition shadow-[0_0_12px_rgba(52,211,153,0.3)] cursor-pointer"
+      title="Alternar para o Terminal CRT Cyber-Deck"
+    >
+      <Terminal class="w-4 h-4 text-emerald-400" />
+      <span>Terminal CRT</span>
+    </button>
   </div>
 </header>

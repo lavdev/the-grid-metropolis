@@ -1,26 +1,53 @@
 pub mod auth;
+pub mod codex;
 pub mod dispatch;
 pub mod error;
+pub mod projects;
 pub mod ws;
 
 use axum::{
-    routing::{get, post},
+    routing::{delete, get, post, put},
     Router,
 };
 
 pub use auth::RequireAuth;
+pub use codex::{codex_status_handler, codex_stream_handler};
 pub use dispatch::dispatch_handler;
 pub use error::ApiError;
+pub use projects::{
+    add_project_message_handler, clear_project_messages_handler, delete_project_handler,
+    delete_project_message_handler, list_projects_handler, save_project_handler,
+    update_project_thread_handler,
+};
 pub use ws::ws_handler;
 
+use crate::db::Database;
 use crate::state::SharedState;
 
 /// Cria o sub-roteador de rotas da API REST e WebSocket da ponte.
-pub fn api_routes(state: SharedState) -> Router {
-    Router::new()
+pub fn api_routes(state: SharedState, db: Database) -> Router {
+    let ws_and_bridge = Router::new()
         .route("/api/v1/bridge/dispatch", post(dispatch_handler))
+        .route("/api/v1/codex/status", get(codex_status_handler))
+        .route("/api/v1/codex/stream", post(codex_stream_handler))
         .route("/ws", get(ws_handler))
-        .with_state(state)
+        .with_state(state);
+
+    let project_routes = Router::new()
+        .route("/api/v1/projects", get(list_projects_handler).post(save_project_handler))
+        .route("/api/v1/projects/{id}", delete(delete_project_handler))
+        .route(
+            "/api/v1/projects/{id}/messages",
+            post(add_project_message_handler).delete(clear_project_messages_handler),
+        )
+        .route(
+            "/api/v1/projects/{id}/messages/{msg_id}",
+            delete(delete_project_message_handler),
+        )
+        .route("/api/v1/projects/{id}/thread", put(update_project_thread_handler))
+        .with_state(db);
+
+    ws_and_bridge.merge(project_routes)
 }
 
 #[cfg(test)]
@@ -41,7 +68,8 @@ mod tests {
     #[tokio::test]
     async fn test_dispatch_unauthorized_when_missing_header() {
         let state = create_shared_state();
-        let app = api_routes(state);
+        let db = Database::init(":memory:").unwrap();
+        let app = api_routes(state, db);
 
         let req = Request::builder()
             .method("POST")
@@ -57,7 +85,8 @@ mod tests {
     #[tokio::test]
     async fn test_dispatch_unauthorized_when_invalid_token() {
         let state = create_shared_state();
-        let app = api_routes(state);
+        let db = Database::init(":memory:").unwrap();
+        let app = api_routes(state, db);
 
         let req = Request::builder()
             .method("POST")
@@ -74,7 +103,8 @@ mod tests {
     #[tokio::test]
     async fn test_dispatch_accepted_when_valid_contract() {
         let state = create_shared_state();
-        let app = api_routes(state);
+        let db = Database::init(":memory:").unwrap();
+        let app = api_routes(state, db);
 
         let valid_payload = r#"{
             "source": "codex-cloud-runner",
@@ -113,7 +143,8 @@ mod tests {
     #[tokio::test]
     async fn test_dispatch_not_found_when_agent_does_not_exist() {
         let state = create_shared_state();
-        let app = api_routes(state);
+        let db = Database::init(":memory:").unwrap();
+        let app = api_routes(state, db);
 
         let payload_nonexistent_agent = r#"{
             "source": "codex",
@@ -142,7 +173,8 @@ mod tests {
     #[tokio::test]
     async fn test_websocket_streaming_and_snapshot_lifecycle() {
         let state = create_shared_state();
-        let app = api_routes(state.clone());
+        let db = Database::init(":memory:").unwrap();
+        let app = api_routes(state.clone(), db);
 
         // Inicia servidor TCP efêmero para testar upgrade real com tokio-tungstenite
         let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();

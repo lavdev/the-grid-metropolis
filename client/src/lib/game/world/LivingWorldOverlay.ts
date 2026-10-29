@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-interface SmokeParticle {
+interface SteamParticle {
   x: number;
   y: number;
   vx: number;
@@ -9,115 +9,44 @@ interface SmokeParticle {
   size: number;
   life: number;
   maxLife: number;
-  color: number;
-}
-
-interface ConduitPulse {
-  p1: { x: number; y: number };
-  p2: { x: number; y: number };
-  p3: { x: number; y: number };
-  t: number;
-  speed: number;
-  color: number;
 }
 
 /**
- * LivingWorldOverlay: Adiciona vida dinâmica contínua sobre a arte mestra de The Grid Metropolis:
- * - Fumaça volumétrica contínua colorida nas 4 chaminés (rosa, verde, ciano)
- * - Projeção holográfica giratória sobre a mesa do Nexus
- * - Telas de código animado e monitores com estática no Glitch Alley
- * - Letreiro e balcão pulsantes no The Battery Lounge
- * - Pulsos bioluminescentes correndo pelos cabos grossos suspensos no ar
+ * LivingWorldOverlay: Adiciona vida dinâmica contínua sobre o Quartel-General Hacker:
+ * - Vapor suave e contínuo subindo da máquina de café expresso no Breakroom
+ * - Brilho pulsante e telas CRT nos arcades retrô
+ * - Luzes de dados e leds piscando nos racks de servidores no Server Vault
+ * - Pulso concêntrico de dados na mesa holográfica central do Nexus
  */
 export class LivingWorldOverlay {
   private scene: Phaser.Scene;
 
-  private smokeGraphics: Phaser.GameObjects.Graphics;
-  private holoGraphics: Phaser.GameObjects.Graphics;
-  private screenGraphics: Phaser.GameObjects.Graphics;
-  private cableGraphics: Phaser.GameObjects.Graphics;
+  private steamGraphics: Phaser.GameObjects.Graphics;
+  private glowGraphics: Phaser.GameObjects.Graphics;
+  private serverLedGraphics: Phaser.GameObjects.Graphics;
   private pulseGraphics: Phaser.GameObjects.Graphics;
 
-  private smokeParticles: SmokeParticle[] = [];
-  private conduitPulses: ConduitPulse[] = [];
-
+  private steamParticles: SteamParticle[] = [];
   private animTimer = 0;
-  private holoAngle = 0;
-  private neonFlicker = 1.0;
-  private codeOffset = 0;
+  private pulseAngle = 0;
   private isDispatchPulsing = false;
   private dispatchRadius = 0;
   private dispatchAlpha = 0;
 
-  // Posições exatas das chaminés na arte mestra
-  private readonly chimneys = [
-    { x: -442, y: -238, color: 0xff3b94 }, // Cúpula rosa superior esquerda
-    { x: -470, y: -80, color: 0xff3b94 },  // Prédio inferior esquerdo
-    { x: -70, y: 154, color: 0x39ff14 },   // Chaminé central inferior
-    { x: 454, y: -30, color: 0x39ff14 },   // Fábrica direita
-  ];
-
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
 
-    this.cableGraphics = scene.add.graphics();
-    this.cableGraphics.setDepth(5);
+    this.glowGraphics = scene.add.graphics();
+    this.glowGraphics.setDepth(20);
 
-    this.smokeGraphics = scene.add.graphics();
-    this.smokeGraphics.setDepth(45);
+    this.serverLedGraphics = scene.add.graphics();
+    this.serverLedGraphics.setDepth(22);
 
-    this.screenGraphics = scene.add.graphics();
-    this.screenGraphics.setDepth(15);
-
-    this.holoGraphics = scene.add.graphics();
-    this.holoGraphics.setDepth(30);
+    this.steamGraphics = scene.add.graphics();
+    this.steamGraphics.setDepth(45);
 
     this.pulseGraphics = scene.add.graphics();
     this.pulseGraphics.setDepth(25);
-
-    this.setupCablePulses();
-  }
-
-  private setupCablePulses() {
-    // Curvas dos cabos de sustentação suspensos no abismo
-    this.conduitPulses = [
-      // Cabo do Nexus para a fábrica leste
-      {
-        p1: { x: 50, y: 35 },
-        p2: { x: 180, y: 120 },
-        p3: { x: 340, y: 140 },
-        t: 0,
-        speed: 0.008,
-        color: 0x00f0ff,
-      },
-      // Cabo do Nexus para o Battery Lounge
-      {
-        p1: { x: 60, y: -30 },
-        p2: { x: 190, y: -90 },
-        p3: { x: 330, y: -130 },
-        t: 0.5,
-        speed: 0.007,
-        color: 0xff007f,
-      },
-      // Cabo do Nexus para o laboratório oeste
-      {
-        p1: { x: -60, y: -10 },
-        p2: { x: -180, y: -80 },
-        p3: { x: -330, y: -120 },
-        t: 0.25,
-        speed: 0.009,
-        color: 0x39ff14,
-      },
-      // Cabo inferior esquerdo
-      {
-        p1: { x: -50, y: 40 },
-        p2: { x: -160, y: 110 },
-        p3: { x: -320, y: 140 },
-        t: 0.75,
-        speed: 0.008,
-        color: 0x00f0ff,
-      },
-    ];
   }
 
   /**
@@ -131,159 +60,94 @@ export class LivingWorldOverlay {
 
   public update(delta: number) {
     this.animTimer += delta;
-    this.holoAngle += delta * 0.002;
-    this.codeOffset = (this.codeOffset + delta * 0.04) % 12;
+    this.pulseAngle += delta * 0.003;
 
-    // 1. Gera fumaça contínua nas 4 chaminés
-    if (this.animTimer > 60) {
+    // 1. Gera vapor suave da máquina de café expresso no Breakroom (canto superior direito ~ x: 450, y: -70)
+    if (this.animTimer > 120) {
       this.animTimer = 0;
-      this.neonFlicker = 0.8 + Math.random() * 0.2;
 
-      for (const ch of this.chimneys) {
-        this.smokeParticles.push({
-          x: ch.x + Phaser.Math.FloatBetween(-2, 2),
-          y: ch.y,
-          vx: Phaser.Math.FloatBetween(-0.25, 0.25),
-          vy: Phaser.Math.FloatBetween(-0.6, -1.1),
-          alpha: 0.85,
-          size: Phaser.Math.Between(4, 8),
-          life: 0,
-          maxLife: 75,
-          color: ch.color,
-        });
-      }
+      this.steamParticles.push({
+        x: 448 + Phaser.Math.FloatBetween(-3, 3),
+        y: -75,
+        vx: Phaser.Math.FloatBetween(-0.15, 0.15),
+        vy: Phaser.Math.FloatBetween(-0.4, -0.7),
+        alpha: 0.6,
+        size: Phaser.Math.Between(2, 4),
+        life: 0,
+        maxLife: 45,
+      });
     }
 
-    // 2. Renderiza partículas de fumaça subindo e expandindo
-    const smg = this.smokeGraphics;
-    smg.clear();
-
-    for (let i = this.smokeParticles.length - 1; i >= 0; i--) {
-      const p = this.smokeParticles[i];
-      p.x += p.vx;
-      p.y += p.vy;
-      p.size += 0.06;
-      p.life++;
-      p.alpha = Math.max(0, 0.85 * (1 - p.life / p.maxLife));
-
-      if (p.life >= p.maxLife) {
-        this.smokeParticles.splice(i, 1);
-        continue;
-      }
-
-      smg.fillStyle(p.color, p.alpha);
-      smg.fillCircle(p.x, p.y, p.size);
-    }
-
-    // 3. Projeção Holográfica Dinâmica no Nexus (Piscina central)
-    this.renderNexusHologram();
-
-    // 4. Telas vivas piscando código e estática
-    this.renderDynamicScreens();
-
-    // 5. Pulsos de dados fluindo pelos cabos suspensos
-    this.renderCableDataPulses(delta);
-
-    // 6. Onda concêntrica de despacho
+    this.renderSteam();
+    this.renderArcadeAndHoloGlow();
+    this.renderServerLeds();
     this.renderDispatchPulse(delta);
   }
 
-  private renderNexusHologram() {
-    const hg = this.holoGraphics;
-    hg.clear();
+  private renderSteam() {
+    const sg = this.steamGraphics;
+    sg.clear();
 
-    const hx = 3;
-    const hy = 2; // Mesa holográfica central na arte
+    for (let i = this.steamParticles.length - 1; i >= 0; i--) {
+      const p = this.steamParticles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.life++;
 
-    // Brilho da piscina circular
-    hg.fillStyle(0x00f0ff, 0.2);
-    hg.fillEllipse(hx, hy + 4, 76, 38);
-    hg.lineStyle(1.5, 0x00f0ff, 0.8);
-    hg.strokeEllipse(hx, hy + 4, 76, 38);
+      const progress = p.life / p.maxLife;
+      const currentAlpha = p.alpha * (1 - progress);
+      const currentSize = p.size * (1 + progress * 0.8);
 
-    // Feixes holográficos ascendentes
-    const holoY = hy - 16;
-    hg.fillStyle(0x00f0ff, 0.12);
-    hg.beginPath();
-    hg.moveTo(hx - 18, hy + 4);
-    hg.lineTo(hx - 36, holoY - 14);
-    hg.lineTo(hx + 36, holoY - 14);
-    hg.lineTo(hx + 18, hy + 4);
-    hg.closePath();
-    hg.fillPath();
+      sg.fillStyle(0x00f0ff, currentAlpha * 0.7);
+      sg.fillCircle(p.x, p.y, currentSize);
 
-    // Telas holográficas rotativas
-    const angle1 = this.holoAngle;
-    const s1x = hx + Math.cos(angle1) * 16;
-    const s1y = holoY - 6 + Math.sin(angle1) * 6;
-
-    hg.fillStyle(0xff007f, 0.7);
-    hg.fillRect(s1x - 12, s1y - 8, 24, 16);
-    hg.lineStyle(1.5, 0x00f0ff, 0.95);
-    hg.strokeRect(s1x - 12, s1y - 8, 24, 16);
-
-    // Linhas de código na tela holográfica
-    hg.fillStyle(0xffffff, 0.9);
-    for (let l = 0; l < 3; l++) {
-      hg.fillRect(s1x - 9, s1y - 5 + l * 4, 14 - l * 3, 1.5);
-    }
-  }
-
-  private renderDynamicScreens() {
-    const sc = this.screenGraphics;
-    sc.clear();
-
-    // Tela grande do Pod Notex (Fábrica Leste)
-    const fScreenX = 330;
-    const fScreenY = 46;
-    sc.fillStyle(0x39ff14, 0.8);
-    for (let row = 0; row < 4; row++) {
-      const lineY = fScreenY + ((row * 4 + this.codeOffset) % 18);
-      sc.fillRect(fScreenX + 3, lineY, 26 - (row % 3) * 4, 1.5);
-    }
-
-    // Tela de Estática / Ruído no Glitch Alley (Caverna superior)
-    const gScreenX = 172;
-    const gScreenY = -185;
-    sc.fillStyle(0xff3b30, 0.75);
-    for (let px = 0; px < 24; px += 3) {
-      for (let py = 0; py < 12; py += 2) {
-        if (Math.random() > 0.6) {
-          sc.fillRect(gScreenX + px, gScreenY + py, 2, 1.5);
-        }
+      if (p.life >= p.maxLife) {
+        this.steamParticles.splice(i, 1);
       }
     }
-
-    // Baliza de advertência piscando no Glitch Alley
-    const beaconAlpha = 0.4 + Math.sin(this.holoAngle * 3) * 0.6;
-    sc.fillStyle(0xff3b30, Math.max(0.1, beaconAlpha));
-    sc.fillCircle(38, -204, 3.5);
-
-    // Letreiro do The Battery Lounge
-    sc.lineStyle(2, 0x00f0ff, this.neonFlicker);
-    sc.strokeRect(338, -242, 126, 18);
   }
 
-  private renderCableDataPulses(delta: number) {
-    const cg = this.cableGraphics;
-    cg.clear();
+  private renderArcadeAndHoloGlow() {
+    const gg = this.glowGraphics;
+    gg.clear();
 
-    for (const cp of this.conduitPulses) {
-      cp.t += cp.speed * (delta * 0.06);
-      if (cp.t > 1) cp.t = 0;
+    const flicker = 0.85 + Math.sin(this.pulseAngle * 4) * 0.15;
 
-      // Ponto na curva de Bézier quadrática
-      const u = 1 - cp.t;
-      const tt = cp.t * cp.t;
-      const uu = u * u;
-      const x = uu * cp.p1.x + 2 * u * cp.t * cp.p2.x + tt * cp.p3.x;
-      const y = uu * cp.p1.y + 2 * u * cp.t * cp.p2.y + tt * cp.p3.y;
+    // 1. Brilho da tela dos Fliperamas no Breakroom
+    // Arcade 1
+    gg.fillStyle(0x00f0ff, 0.15 * flicker);
+    gg.fillRect(235, -85, 24, 28);
+    // Arcade 2
+    gg.fillStyle(0x9d00ff, 0.15 * flicker);
+    gg.fillRect(290, -115, 24, 28);
+    // Arcade 3
+    gg.fillStyle(0xff007f, 0.15 * flicker);
+    gg.fillRect(360, -85, 24, 28);
 
-      // Pacote de luz fluindo pelo cabo
-      cg.fillStyle(cp.color, 0.95);
-      cg.fillCircle(x, y, 3);
-      cg.fillStyle(cp.color, 0.4);
-      cg.fillCircle(x, y, 6);
+    // 2. Halo azul brilhante em torno da mesa holográfica do War Room (x: 0, y: -190)
+    const holoFlicker = 0.2 + Math.sin(this.pulseAngle * 2) * 0.08;
+    gg.fillStyle(0x00f0ff, holoFlicker);
+    gg.fillEllipse(0, -188, 120, 60);
+  }
+
+  private renderServerLeds() {
+    const lg = this.serverLedGraphics;
+    lg.clear();
+
+    // Cascata de luzes verdes Matrix nos racks do Server Vault (embaixo: ~ x: -60 a 60, y: 120 a 240)
+    const timeSec = this.animTimer * 0.01;
+
+    // Piscar aleatório mas com padrão sutil de datacenter
+    if (Math.random() > 0.3) {
+      lg.fillStyle(0x39ff14, 0.9);
+      // Racks esquerdos
+      lg.fillRect(-52, 130 + (Math.floor(Math.sin(timeSec) * 3) + 3) * 6, 2, 2);
+      lg.fillRect(-38, 145 + (Math.floor(Math.cos(timeSec) * 4) + 4) * 5, 2, 2);
+
+      // Racks direitos
+      lg.fillStyle(0x00f0ff, 0.9);
+      lg.fillRect(40, 140 + (Math.floor(Math.sin(timeSec * 1.5) * 3) + 3) * 6, 2, 2);
+      lg.fillRect(58, 155 + (Math.floor(Math.cos(timeSec * 1.2) * 4) + 4) * 5, 2, 2);
     }
   }
 
@@ -302,21 +166,21 @@ export class LivingWorldOverlay {
       return;
     }
 
+    // Pulso concêntrico a partir da mesa holográfica (x: 0, y: -190)
     pg.lineStyle(2, 0x00f0ff, this.dispatchAlpha);
-    pg.strokeEllipse(3, 2, this.dispatchRadius * 2, this.dispatchRadius);
+    pg.strokeEllipse(0, -188, this.dispatchRadius * 2, this.dispatchRadius);
 
     if (this.dispatchRadius > 35) {
       pg.lineStyle(1.5, 0x39ff14, this.dispatchAlpha * 0.7);
-      pg.strokeEllipse(3, 2, (this.dispatchRadius - 20) * 2, this.dispatchRadius - 20);
+      pg.strokeEllipse(0, -188, (this.dispatchRadius - 20) * 2, this.dispatchRadius - 20);
     }
   }
 
   public destroy() {
-    this.cableGraphics.destroy();
-    this.smokeGraphics.destroy();
-    this.screenGraphics.destroy();
-    this.holoGraphics.destroy();
+    this.steamGraphics.destroy();
+    this.glowGraphics.destroy();
+    this.serverLedGraphics.destroy();
     this.pulseGraphics.destroy();
-    this.smokeParticles = [];
+    this.steamParticles = [];
   }
 }
