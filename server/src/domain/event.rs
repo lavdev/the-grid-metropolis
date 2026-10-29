@@ -51,7 +51,12 @@ impl WebSocketEvent {
     }
 
     /// Cria um evento de atribuição e início de deslocamento (TASK_ASSIGNED).
-    pub fn task_assigned(agent_id: &str, source_pod: &str, target_pod: &str, task_id: &str) -> Self {
+    pub fn task_assigned(
+        agent_id: &str,
+        source_pod: &str,
+        target_pod: &str,
+        task_id: &str,
+    ) -> Self {
         Self::new(
             EventTopic::TaskAssigned,
             serde_json::json!({

@@ -2,6 +2,7 @@
   import { isForgeModalOpen, forgeCustomCard } from '../../lib/stores/cardStore';
   import type { TargetAIModel, CardCategory, CardRarity } from '../../types/card';
   import { X, Hammer, Zap, Sparkles, Terminal, Cpu } from '@lucide/svelte';
+  import { notify } from '../../lib/stores/uiFeedbackStore';
 
   let title = '';
   let subtitle = '';
@@ -18,7 +19,7 @@
 
   function handleForge() {
     if (!title.trim() || !prompt.trim()) {
-      alert('Preencha ao menos o Título e a Diretriz (Prompt) da Carta!');
+      notify('Dados incompletos', 'Preencha ao menos o título e a diretriz (prompt) da carta.', 'error');
       return;
     }
 

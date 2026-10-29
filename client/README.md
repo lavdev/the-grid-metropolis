@@ -45,3 +45,25 @@ If you have state that's important to retain within a component, consider creati
 import { writable } from 'svelte/store'
 export default writable(0)
 ```
+
+## Overview
+
+This package contains the Svelte and TypeScript client, its Phaser simulation, build scripts, and Tauri desktop wrapper.
+
+## Interface
+- The Vite application mounts `App.svelte` from `src/main.ts:app` and includes the Svelte and Tailwind plugins from `vite.config.ts:defineConfig`.
+- `src/App.svelte:onMount` loads project data, subscribes to the WebSocket client, forwards received events to `gridStore.ts:handleIncomingEvent`, and cleans up listeners on unmount.
+- Subsystem contracts: [Svelte source](./src/README.md), [client build scripts](./scripts/README.md), [Tauri desktop wrapper](./src-tauri/README.md).
+
+## Invariants
+- The Vite dev server binds to port `5173` and rejects a fallback port (`vite.config.ts:server`).
+- Client API and WebSocket development traffic is proxied to the local backend at `127.0.0.1:3000` (`vite.config.ts:server.proxy`).
+
+## Side Effects
+- The client mounts browser UI, opens a WebSocket connection, and accesses backend HTTP/WebSocket routes (`src/main.ts:app`, `src/App.svelte:onMount`, `vite.config.ts:server.proxy`).
+- `src-tauri/src/lib.rs:run` may launch and later terminate the packaged local backend sidecar when running the desktop application.
+
+## Verification
+- Run `npm run check` for Svelte and TypeScript checks.
+- Run `npm run build` for the Vite production build.
+- Run `npm run build:server:debug` or `npm run build:server:release` to prepare the Tauri backend sidecar.

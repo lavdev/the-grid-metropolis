@@ -1,6 +1,7 @@
 <script lang="ts">
   import { isBacklogOpen, missionBacklog, ROSTER_AGENTS, sendInstruction, deleteMission } from '../../lib/stores/chatStore';
   import { X, Plus, CheckCircle2, Clock, Cpu, FileCode, Tag, ArrowUpRight, Filter, AlertCircle, Trash2 } from '@lucide/svelte';
+  import { notify } from '../../lib/stores/uiFeedbackStore';
 
   let currentTab: 'ALL' | 'IN_PROGRESS' | 'COMPLETED' = 'ALL';
   let isCreating = false;
@@ -18,7 +19,7 @@
 
   function handleCreateMission() {
     if (!newPrompt.trim()) {
-      alert('Digite ao menos a instrução/prompt da missão.');
+      notify('Instrução necessária', 'Digite ao menos a instrução/prompt da missão.', 'error');
       return;
     }
 

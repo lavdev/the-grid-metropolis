@@ -2,7 +2,7 @@ pub mod error;
 pub mod world;
 
 pub use error::StateError;
-pub use world::{create_shared_state, SharedState, WorldState, DEFAULT_BROADCAST_CAPACITY};
+pub use world::{DEFAULT_BROADCAST_CAPACITY, SharedState, WorldState, create_shared_state};
 
 #[cfg(test)]
 mod tests {

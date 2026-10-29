@@ -50,7 +50,7 @@ A proposta substitui painéis convencionais de tabelas e logs monótonos por uma
 
 * **Backend:** Rust (`axum 0.8`, `tokio 1.54`, `serde`, `tower-http`, `tracing`, `thiserror`)
 * **Frontend UI / HUD:** Svelte 5, TypeScript, Tailwind CSS v4
-* **Motor Isométrico 2D:** Phaser 3 (WebGL)
+* **Motor Isométrico 2D:** Phaser 4 (WebGL)
 * **Pathfinding:** EasyStar.js / A* Isométrico (projeção 2:1)
 * **Gestão:** Task-Driven Development sincronizado com o Notion Workspace via API
 
@@ -69,7 +69,19 @@ cargo test
 cargo run
 ```
 
-O servidor iniciará por padrão em `http://0.0.0.0:3000` com endpoint de health check em `http://localhost:3000/health`.
+O servidor local inicia em `http://127.0.0.1:3000`, com health check em `http://127.0.0.1:3000/health`. Ele aceita conexões apenas da própria máquina.
+
+## 🖥️ Aplicativo Desktop (Tauri)
+
+O cliente desktop usa Tauri 2, abre maximizado e inicia o backend local incluído. Em desenvolvimento, `tauri:dev` compila o sidecar Rust e inicia Vite, Tauri e a Bridge; não é necessário abrir um terminal separado para o servidor:
+
+```bash
+cd client
+npm install
+npm run tauri:dev
+```
+
+Para gerar o instalador desktop, execute `npm run tauri:build` em `client`. O comando compila o backend como sidecar e o inclui no pacote. Os dados da versão instalada ficam no diretório de dados do aplicativo do sistema; ao primeiro início, um banco legado encontrado no workspace é migrado por backup SQLite. O comando `npm run dev` continua disponível para usar apenas o frontend; nesse caso, inicie o backend manualmente com `cd server && cargo run`.
 
 ---
 
@@ -77,3 +89,31 @@ O servidor iniciará por padrão em `http://0.0.0.0:3000` com endpoint de health
 
 * [AGENTS.md](AGENTS.md) — Especificação completa do universo, dinâmicas de jogo, contratos de API e diretrizes técnicas (SOLID & Clean Code).
 * [ROADMAP.md](ROADMAP.md) — Lista das 33 tarefas divididas por 7 fases e sincronizadas com o Notion.
+
+---
+
+## System Overview
+
+The repository contains a Svelte/Vite client with a Tauri desktop package, a Rust server, and operational scripts. The client owns the interactive UI and simulation code; the server owns HTTP/WebSocket transport, SQLite persistence, domain models, and in-memory world state. The scripts directory contains Notion, bridge, browser capture, and source-maintenance utilities. See the package contracts below for verified interfaces and side effects.
+
+## Subdirectories & System Boundaries
+
+- [client](client/README.md) — Svelte/TypeScript application, Phaser simulation, and Tauri desktop integration.
+- [scripts](scripts/README.md) — Notion and bridge utilities, browser captures, and one-off source editing tools.
+- [server](server/README.md) — Rust API, SQLite persistence, domain types, and simulation state.
+
+## Global Invariants
+
+- The bridge dispatch endpoint checks Bearer authentication before dispatching a task (`server/src/api/auth.rs::RequireAuth::from_request_parts`, `server/src/api/dispatch.rs::dispatch_handler`).
+- The server binds to the loopback interface and defaults to port 3000 (`server/src/main.rs::main`).
+
+## Global Side Effects
+
+- Server startup initializes local SQLite storage and serves HTTP; API and task operations can persist records or mutate and broadcast in-memory state (`server/README.md`).
+- Operational scripts can make authenticated Notion and HTTP/WebSocket requests, write screenshots, and modify frontend source files (`scripts/README.md`).
+
+## System Verification
+
+- Client: run `npm run check` from `client/`; the package manifest also provides `npm run build`.
+- Server: run `cargo test` from `server/`.
+- The root `package.json` defines no scripts, so there is no root-level verification command.

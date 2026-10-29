@@ -1,0 +1,174 @@
+openapi: 3.1.0
+info:
+  title: The Grid Metropolis Run Settings API
+  version: 0.1.0
+  description: >-
+    First implemented slice of the durable-run API. Run execution endpoints remain
+    unavailable until coordinator recovery and end-to-end validation are complete.
+servers:
+  - url: http://127.0.0.1:8787
+paths:
+  /api/v1/projects/{id}/execution-settings:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getProjectExecutionSettings
+      summary: Read the project's execution ceilings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Settings are configured, or no settings have been saved yet.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExecutionSettingsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ProjectNotFound'
+        '503':
+          $ref: '#/components/responses/AuthNotConfigured'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    put:
+      operationId: putProjectExecutionSettings
+      summary: Save the project's required execution ceilings
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateExecutionSettingsRequest'
+      responses:
+        '200':
+          description: Settings saved and returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfiguredExecutionSettingsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/ProjectNotFound'
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '503':
+          $ref: '#/components/responses/AuthNotConfigured'
+        '500':
+          $ref: '#/components/responses/InternalError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    RunBudgetLimits:
+      type: object
+      additionalProperties: false
+      required:
+        - maxModelTurnsPerRun
+        - maxElapsedSecondsPerRun
+        - maxTokensPerRun
+      properties:
+        maxModelTurnsPerRun:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Hard ceiling on model turns started by the Harness per run.
+        maxElapsedSecondsPerRun:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Hard wall-clock ceiling per run.
+        maxTokensPerRun:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Best-effort ceiling; a turn already in progress may exceed it.
+    UpdateExecutionSettingsRequest:
+      type: object
+      additionalProperties: false
+      required: [budgets]
+      properties:
+        budgets:
+          $ref: '#/components/schemas/RunBudgetLimits'
+    ExecutionSettingsResponse:
+      type: object
+      additionalProperties: false
+      required: [configured, budgets]
+      properties:
+        configured:
+          type: boolean
+        budgets:
+          oneOf:
+            - $ref: '#/components/schemas/RunBudgetLimits'
+            - type: 'null'
+    ConfiguredExecutionSettingsResponse:
+      type: object
+      additionalProperties: false
+      required: [configured, budgets]
+      properties:
+        configured:
+          const: true
+        budgets:
+          $ref: '#/components/schemas/RunBudgetLimits'
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message, requestId]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            requestId:
+              type: string
+  responses:
+    Unauthorized:
+      description: Missing or invalid Bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    AuthNotConfigured:
+      description: Server-side BRIDGE_AUTH_TOKEN is absent or blank; fail closed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    ProjectNotFound:
+      description: No project exists with this ID.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    InvalidBudget:
+      description: One or more ceilings are zero or exceed the supported storage range.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    InvalidRequest:
+      description: The request body is malformed or contains invalid budget values.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    InternalError:
+      description: The request could not be completed due to an internal failure.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'

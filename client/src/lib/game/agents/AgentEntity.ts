@@ -8,6 +8,9 @@ import { gameBridge } from '../gameBridge';
 export type AgentRole = 'DEVELOPER' | 'RESEARCHER' | 'DEVOPS' | 'SECURITY' | 'BOT_RUNNER';
 export type AgentStatus = 'IDLE' | 'WALKING' | 'WORKING' | 'MEETING' | 'ERROR';
 
+const WORKING_VISUAL_OFFSET_X = -24;
+const WORKING_VISUAL_TRANSITION_MS = 200;
+
 export interface AgentData {
   id: string;
   name: string;
@@ -55,6 +58,10 @@ export class AgentEntity {
   private workSparkTimer = 0;
   private intendedWorkState = false;
   private workDirection: AgentDirection = 'NW';
+  private visualOffsetX: number;
+  private visualOffsetFromX: number;
+  private visualOffsetTargetX: number;
+  private visualOffsetElapsedMs = WORKING_VISUAL_TRANSITION_MS;
 
   private readonly walkSpeed = 0.075; // Velocidade ágil e suave de caminhada entre tiles
 
@@ -64,6 +71,9 @@ export class AgentEntity {
     this.cartX = data.cartX;
     this.cartY = data.cartY;
     this.status = data.status;
+    this.visualOffsetX = data.status === 'WORKING' ? WORKING_VISUAL_OFFSET_X : 0;
+    this.visualOffsetFromX = this.visualOffsetX;
+    this.visualOffsetTargetX = this.visualOffsetX;
 
     const { x: isoX, y: isoY } = cartesianToIsometric(this.cartX, this.cartY);
 
@@ -131,7 +141,7 @@ export class AgentEntity {
 
     const { x: isoX, y: isoY } = cartesianToIsometric(this.cartX, this.cartY);
     this.selectionGraphics.lineStyle(2, Phaser.Display.Color.HexStringToColor(this.data.accentColor).color, 0.95);
-    this.selectionGraphics.strokeEllipse(isoX, isoY, 44, 22);
+    this.selectionGraphics.strokeEllipse(isoX + this.visualOffsetX, isoY, 44, 22);
   }
 
   /**
@@ -178,6 +188,12 @@ export class AgentEntity {
   }
 
   public setStatus(newStatus: AgentStatus) {
+    if (this.status !== newStatus) {
+      this.visualOffsetFromX = this.visualOffsetX;
+      this.visualOffsetTargetX = newStatus === 'WORKING' ? WORKING_VISUAL_OFFSET_X : 0;
+      this.visualOffsetElapsedMs = 0;
+    }
+
     this.status = newStatus;
     this.updateFrameTexture();
     if (newStatus !== 'WORKING') {
@@ -221,6 +237,7 @@ export class AgentEntity {
     if (this.status === 'WALKING' && this.walkPath.length > 1) {
       this.processWalking(delta);
     }
+    this.updateVisualOffset(delta);
 
     // 2. Animação de digitação em 'WORKING' e partículas de código
     if (this.status === 'WORKING') {
@@ -238,16 +255,33 @@ export class AgentEntity {
 
     // 4. Posiciona elementos visuais
     const { x: isoX, y: isoY } = cartesianToIsometric(this.cartX, this.cartY);
-    this.sprite.setPosition(isoX, isoY - 38);
-    this.nameText.setPosition(isoX, isoY - 68);
-    this.bubbleContainer.setPosition(isoX, isoY - 96);
+    const visualX = isoX + this.visualOffsetX;
+    this.sprite.setPosition(visualX, isoY - 38);
+    this.nameText.setPosition(visualX, isoY - 68);
+    this.bubbleContainer.setPosition(visualX, isoY - 96);
     if (this.isSelected) {
       this.renderSelectionRing();
     }
-    this.renderDataPacket(isoX, isoY);
+    this.renderDataPacket(visualX, isoY);
 
     // 5. Z-Sorting dinâmico por tile
     this.updateZDepth();
+  }
+
+  private updateVisualOffset(delta: number) {
+    if (this.visualOffsetX === this.visualOffsetTargetX) return;
+
+    this.visualOffsetElapsedMs = Math.min(
+      this.visualOffsetElapsedMs + delta,
+      WORKING_VISUAL_TRANSITION_MS,
+    );
+    const progress = this.visualOffsetElapsedMs / WORKING_VISUAL_TRANSITION_MS;
+    const easedProgress = progress * progress * (3 - 2 * progress);
+    this.visualOffsetX = Phaser.Math.Linear(
+      this.visualOffsetFromX,
+      this.visualOffsetTargetX,
+      easedProgress,
+    );
   }
 
   private renderWorkSparks(delta: number) {
@@ -257,11 +291,12 @@ export class AgentEntity {
 
     this.workSparkGraphics.clear();
     const { x: isoX, y: isoY } = cartesianToIsometric(this.cartX, this.cartY);
+    const visualX = isoX + this.visualOffsetX;
 
     // Partículas de código verde e ciano saindo do teclado
     const colors = [0x00f0ff, 0x39ff14, 0xff007f];
     for (let i = 0; i < 3; i++) {
-      const px = isoX + Phaser.Math.Between(-12, 12);
+      const px = visualX + Phaser.Math.Between(-12, 12);
       const py = isoY - 38 + Phaser.Math.Between(-8, 8);
       const col = colors[i % colors.length];
       this.workSparkGraphics.fillStyle(col, 0.8);

@@ -3,6 +3,7 @@
 **/target/
 **/*.rs.bk
 Cargo.lock
+client/src-tauri/binaries/
 
 # Node / Frontend
 node_modules/

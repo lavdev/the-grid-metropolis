@@ -3,6 +3,7 @@ import type { ChatMessage } from './chatStore';
 import { soundFX } from '../audio/soundFX';
 import { droidRoster, type RosterDroid } from './droidRosterStore';
 import { streamAiCompletion } from '../ai/aiService';
+import { apiUrl } from '../api';
 
 export interface DroidInfo {
   id: string;
@@ -198,7 +199,7 @@ const messagePersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 async function persistProjectMessage(projectId: string, message: ChatMessage): Promise<void> {
   try {
-    const res = await fetch(`/api/v1/projects/${projectId}/messages`, {
+    const res = await fetch(apiUrl(`/api/v1/projects/${projectId}/messages`), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...message, projectId }),
@@ -240,7 +241,7 @@ function getProjectThreadContext(projectId: string) {
 
 export async function loadProjectsFromDatabase(): Promise<ProjectTerminal[]> {
   try {
-    const res = await fetch('/api/v1/projects');
+    const res = await fetch(apiUrl('/api/v1/projects'));
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data: ProjectTerminal[] = await res.json();
     if (Array.isArray(data)) {
@@ -266,7 +267,7 @@ export async function loadProjectsFromDatabase(): Promise<ProjectTerminal[]> {
 
 export async function syncProjectToDatabase(project: ProjectTerminal): Promise<void> {
   try {
-    const res = await fetch('/api/v1/projects', {
+    const res = await fetch(apiUrl('/api/v1/projects'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(project),
@@ -279,7 +280,7 @@ export async function syncProjectToDatabase(project: ProjectTerminal): Promise<v
 
 export async function syncProjectThreadToDatabase(projectId: string, threadId?: string): Promise<void> {
   try {
-    await fetch(`/api/v1/projects/${projectId}/thread`, {
+    await fetch(apiUrl(`/api/v1/projects/${projectId}/thread`), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ thread_id: threadId || null }),
@@ -908,6 +909,36 @@ export function createNewProject(
   syncProjectToDatabase(newProj);
 }
 
+export function syncRosterDroidToProjects(
+  droid: Pick<RosterDroid, 'id' | 'name' | 'role' | 'model' | 'planBadge' | 'avatarType' | 'accentColor'>
+): void {
+  projects.update((all) =>
+    all.map((project) => {
+      if (!project.droids.some((assignedDroid) => assignedDroid.id === droid.id)) return project;
+
+      const updatedProject: ProjectTerminal = {
+        ...project,
+        droids: project.droids.map((assignedDroid) =>
+          assignedDroid.id === droid.id
+            ? {
+                ...assignedDroid,
+                name: droid.name,
+                role: droid.role,
+                model: droid.model,
+                planBadge: droid.planBadge,
+                avatarType: droid.avatarType,
+                accentColor: droid.accentColor,
+              }
+            : assignedDroid
+        ),
+      };
+
+      void syncProjectToDatabase(updatedProject);
+      return updatedProject;
+    })
+  );
+}
+
 export function reconfigureProjectDroids(projectId: string, selectedDroidIds: string[]) {
   const roster = get(droidRoster);
   const matchedDroids: DroidInfo[] = selectedDroidIds.map((id) => {
@@ -996,7 +1027,7 @@ export function resetProjectThread(projectId: string): void {
 
 export async function deleteProject(projectId: string): Promise<boolean> {
   try {
-    const res = await fetch(`/api/v1/projects/${projectId}`, {
+    const res = await fetch(apiUrl(`/api/v1/projects/${projectId}`), {
       method: 'DELETE',
     });
     if (!res.ok && res.status !== 404) {
@@ -1020,7 +1051,7 @@ export async function deleteProject(projectId: string): Promise<boolean> {
 
 export async function deleteProjectMessage(projectId: string, messageId: string): Promise<boolean> {
   try {
-    const res = await fetch(`/api/v1/projects/${projectId}/messages/${messageId}`, {
+    const res = await fetch(apiUrl(`/api/v1/projects/${projectId}/messages/${messageId}`), {
       method: 'DELETE',
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1046,7 +1077,7 @@ export async function deleteProjectMessage(projectId: string, messageId: string)
 
 export async function clearProjectMessages(projectId: string): Promise<boolean> {
   try {
-    const res = await fetch(`/api/v1/projects/${projectId}/messages`, {
+    const res = await fetch(apiUrl(`/api/v1/projects/${projectId}/messages`), {
       method: 'DELETE',
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);

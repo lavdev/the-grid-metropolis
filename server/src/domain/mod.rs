@@ -1,6 +1,7 @@
 pub mod agent;
 pub mod event;
 pub mod pod;
+pub mod run;
 pub mod task;
 
 pub use agent::{Agent, AgentLocation, AgentMetrics, AgentRole, AgentStatus, SpriteConfig};
@@ -36,7 +37,8 @@ mod tests {
         assert!(json.contains("\"status\": \"IDLE\""));
         assert!(json.contains("\"colorAccent\": \"#00f0ff\""));
 
-        let deserialized: Agent = serde_json::from_str(&json).expect("Falha ao desserializar Agent");
+        let deserialized: Agent =
+            serde_json::from_str(&json).expect("Falha ao desserializar Agent");
         assert_eq!(agent, deserialized);
     }
 

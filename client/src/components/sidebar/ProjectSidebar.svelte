@@ -29,6 +29,7 @@
   } from '../../lib/stores/droidRosterStore';
   import { setDroidFilter } from '../../lib/stores/workspaceFilesStore';
   import { soundFX } from '../../lib/audio/soundFX';
+  import { confirmAction } from '../../lib/stores/uiFeedbackStore';
   import {
     Search,
     FolderGit2,
@@ -36,6 +37,7 @@
     Plus,
     ChevronLeft,
     ChevronRight,
+    ChevronDown,
     Terminal,
     CheckCircle2,
     Clock,
@@ -56,6 +58,37 @@
   let newProjPath = '';
   let selectedModel = 'GPT-6 Luna';
   let selectedDroidIds: string[] = ['spark-01', 'agent-codex-01', 'agent-sec-05'];
+  const PROJECT_EXPANSION_STORAGE_KEY = 'the_grid_metropolis_project_expansion';
+
+  function loadProjectExpansionState(): Record<string, boolean> {
+    if (typeof window === 'undefined') return {};
+    try {
+      const stored = window.localStorage.getItem(PROJECT_EXPANSION_STORAGE_KEY);
+      if (!stored) return {};
+      const parsed: unknown = JSON.parse(stored);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {};
+      return Object.fromEntries(
+        Object.entries(parsed).filter((entry): entry is [string, boolean] => typeof entry[1] === 'boolean')
+      );
+    } catch (error) {
+      console.warn('Erro ao ler estado de expansão dos projetos:', error);
+      return {};
+    }
+  }
+
+  let expandedProjects = loadProjectExpansionState();
+
+  function toggleProjectExpansion(projectId: string): void {
+    expandedProjects = {
+      ...expandedProjects,
+      [projectId]: !(expandedProjects[projectId] ?? true),
+    };
+    try {
+      window.localStorage.setItem(PROJECT_EXPANSION_STORAGE_KEY, JSON.stringify(expandedProjects));
+    } catch (error) {
+      console.warn('Erro ao persistir estado de expansão dos projetos:', error);
+    }
+  }
 
   // Modal de Reconfiguração de Droids do Projeto Existente
   let showReconfigModal = false;
@@ -159,7 +192,12 @@
   }
 
   async function handleDeleteProject(project: ProjectTerminal) {
-    if (confirm(`Tem certeza que deseja excluir o workspace "${project.name}"?\nEsta ação removerá o projeto e todo o histórico persistido do SQLite.`)) {
+    if (await confirmAction({
+      title: `Excluir workspace "${project.name}"?`,
+      message: 'Esta ação removerá o projeto e todo o histórico persistido do SQLite.',
+      confirmLabel: 'Excluir workspace',
+      tone: 'danger',
+    })) {
       await deleteProject(project.id);
       soundFX.playKeyClick();
     }
@@ -223,6 +261,7 @@
     <div class="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-3 custom-scrollbar">
       {#each filteredProjects as project (project.id)}
         {@const isSelected = project.id === $activeProjectId}
+        {@const isProjectExpanded = expandedProjects[project.id] ?? true}
         <div
           class="project-card rounded-lg border transition-all duration-200 overflow-hidden {isSelected
             ? 'bg-[#101c2b] border-[#3a6376]'
@@ -261,6 +300,21 @@
               </div>
             </button>
 
+            <button
+              type="button"
+              aria-label={`${isProjectExpanded ? 'Recolher' : 'Expandir'} ${project.name}`}
+              aria-expanded={isProjectExpanded}
+              aria-controls={`project-droids-${project.id}`}
+              on:click={() => toggleProjectExpansion(project.id)}
+              class="p-1 rounded bg-[#101726] hover:bg-cyan-950 text-slate-400 hover:text-cyan-300 border border-slate-700/60 hover:border-cyan-500/60 transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400"
+              title={`${isProjectExpanded ? 'Recolher' : 'Expandir'} lista de droids`}
+            >
+              <ChevronDown
+                size={14}
+                class={`transition-transform ${!isProjectExpanded ? 'rotate-180' : ''}`}
+              />
+            </button>
+
             <!-- Badges e Botão de Configuração de Droids (Harness) -->
             <div class="flex items-center gap-1.5 shrink-0 ml-2">
               <span class="text-[12px] px-1.5 py-0.5 rounded bg-[#131c2c] text-cyan-400 font-mono border border-cyan-500/20">
@@ -288,7 +342,11 @@
           </div>
 
           <!-- Lista de Droids Alocados neste Projeto -->
-          <div class="p-2 flex flex-col gap-1.5 bg-[#080c14]/60">
+          <div
+            id={`project-droids-${project.id}`}
+            class="p-2 flex flex-col gap-1.5 bg-[#080c14]/60"
+            hidden={!isProjectExpanded}
+          >
             {#each project.droids as droid (droid.id)}
               {@const isDroidActive = isSelected && project.activeDroidId === droid.id}
               {@const isWorking = isSelected && (droid.status === 'WORKING' || droid.status === 'THINKING' || (project.pipeline.isActive && project.pipeline.currentDroidId === droid.id))}

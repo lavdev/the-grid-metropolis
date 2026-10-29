@@ -1,4 +1,5 @@
 import { writable, derived, get } from 'svelte/store';
+import { apiUrl } from '../api';
 
 export interface WorkspaceFile {
   path: string;
@@ -237,7 +238,7 @@ export async function loadWorkspaceFile(projectId: string, path: string): Promis
 
     let lastError = `Não foi possível carregar ${path}`;
     for (const candidatePath of candidatePaths) {
-      const response = await fetch(`/api/v1/projects/${encodeURIComponent(projectId)}/files?path=${encodeURIComponent(candidatePath)}`);
+      const response = await fetch(apiUrl(`/api/v1/projects/${encodeURIComponent(projectId)}/files?path=${encodeURIComponent(candidatePath)}`));
       if (response.ok) {
         const file = await response.json() as WorkspaceFile;
         upsertWorkspaceFile(projectId, { ...file, path });

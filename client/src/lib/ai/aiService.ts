@@ -1,5 +1,5 @@
-import { GoogleGenAI } from '@google/genai';
 import { get } from 'svelte/store';
+import { apiUrl } from '../api';
 import { aiConfig, hasConfiguredApiKey, type AiConfig } from '../stores/aiConfigStore';
 
 export interface StreamOptions {
@@ -88,7 +88,7 @@ async function streamCodexCli(
     (config.codexModel && config.codexModel !== 'default' ? config.codexModel : (config.model && config.model !== 'default' ? config.model : undefined));
   const reqReasoning = options.reasoningEffort || config.reasoningEffort || undefined;
 
-  const response = await fetch('/api/v1/codex/stream', {
+  const response = await fetch(apiUrl('/api/v1/codex/stream'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     signal: options.signal,
@@ -213,6 +213,7 @@ async function streamGemini(
   config: AiConfig,
   startTime: number
 ): Promise<StreamResult> {
+  const { GoogleGenAI } = await import('@google/genai');
   const ai = new GoogleGenAI({ apiKey: config.apiKey });
   const modelName = config.model || 'gemini-3.8-flash';
 

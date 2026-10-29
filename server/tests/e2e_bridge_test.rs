@@ -1,8 +1,8 @@
-use std::net::SocketAddr;
 use axum::Router;
 use futures_util::StreamExt;
 use reqwest::StatusCode;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
+use std::net::SocketAddr;
 use tokio_tungstenite::connect_async;
 
 use server::api::api_routes;
@@ -74,7 +74,10 @@ async fn test_full_bridge_dispatch_and_websocket_stream_e2e() {
 
     assert_eq!(resp.status(), StatusCode::ACCEPTED);
 
-    let resp_body: Value = resp.json().await.expect("Falha ao parsear corpo de resposta");
+    let resp_body: Value = resp
+        .json()
+        .await
+        .expect("Falha ao parsear corpo de resposta");
     assert_eq!(resp_body["status"], "ACCEPTED");
     assert_eq!(resp_body["taskId"], "task-e2e-999");
     assert_eq!(resp_body["targetAgentId"], "agent-rust-dev");

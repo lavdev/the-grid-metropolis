@@ -18,6 +18,7 @@
   } from '../../lib/stores/workspaceFilesStore';
   import SparkMascot from './SparkMascot.svelte';
   import PipelineStepper from './PipelineStepper.svelte';
+  import ExecutionInspector from './ExecutionInspector.svelte';
   import VimInspector from './VimInspector.svelte';
   import {
     Send,
@@ -34,17 +35,34 @@
     Key,
     Trash2,
     ChevronDown,
+    CircleAlert,
+    RefreshCw,
   } from '@lucide/svelte';
   import { openAiSettings, aiConfig } from '../../lib/stores/aiConfigStore';
   import ModelSelectorDropdown from './ModelSelectorDropdown.svelte';
   import { renderMarkdown } from '../../lib/markdown';
+  import { confirmAction } from '../../lib/stores/uiFeedbackStore';
 
   export let connectionStatus: import('../../lib/socket/client').ConnectionState = 'CONNECTING';
+  export let onReconnect: () => void = () => {};
   let isModelMenuOpen = false;
+  let expandedThinkingMessageIds: Record<string, boolean> = {};
+
+  function toggleThinking(messageId: string): void {
+    expandedThinkingMessageIds = {
+      ...expandedThinkingMessageIds,
+      [messageId]: !expandedThinkingMessageIds[messageId],
+    };
+  }
 
   async function handleClearMessages() {
     if (!$activeProject?.id) return;
-    if (confirm(`Deseja limpar todo o histórico de mensagens e tarefas de "${$activeProject.name}"?`)) {
+    if (await confirmAction({
+      title: 'Limpar histórico do workspace?',
+      message: `Todo o histórico de mensagens e tarefas de "${$activeProject.name}" será removido.`,
+      confirmLabel: 'Limpar histórico',
+      tone: 'danger',
+    })) {
       await clearProjectMessages($activeProject.id);
       soundFX.playKeyClick();
     }
@@ -245,6 +263,17 @@
         </details>
       </div>
 
+      {#if connectionStatus !== 'CONNECTED'}
+        <div class="bridge-diagnostic" role="status">
+          <CircleAlert size={17} class="shrink-0" />
+          <div class="bridge-diagnostic-copy">
+            <strong>{connectionStatus === 'CONNECTING' ? 'Conectando ao backend local' : 'Backend local indisponível'}</strong>
+            <span>{connectionStatus === 'CONNECTING' ? 'A sessão tentará reconectar automaticamente.' : 'No desenvolvimento, inicie o serviço com cd server e cargo run. O desktop instalado inicia o backend incluído.'}</span>
+          </div>
+          <button type="button" on:click={onReconnect} aria-label="Tentar conexão novamente" title="Tentar conexão novamente"><RefreshCw size={14} /> Tentar novamente</button>
+        </div>
+      {/if}
+
       <!-- 2.1 Barra do Pipeline Sequencial Multi-Droid (Handoff Automático) -->
       <PipelineStepper pipeline={$activeProject.pipeline} droids={$activeProject.droids} />
 
@@ -316,10 +345,8 @@
         </div>
       {:else}
         <!-- 3. Área de Diálogos / Stream de Mensagens do Terminal do Projeto -->
-        <main
-          bind:this={chatScrollContainer}
-          class="conversation relative z-20 flex-1 min-h-0 overflow-y-auto space-y-6 custom-scrollbar"
-        >
+        <div class="console-workspace relative z-20 flex-1 min-h-0">
+        <main bind:this={chatScrollContainer} class="conversation min-w-0 flex-1 overflow-y-auto space-y-6 custom-scrollbar">
           <div class="session-banner">
             <span class="session-rule"></span><span><Terminal size={13} /> Sessão de trabalho</span><span class="session-rule"></span>
           </div>
@@ -491,9 +518,27 @@
 
                   <!-- Processo de Pensamento (Chain-of-Thought) se existir -->
                   {#if msg.thinking}
+                    {@const thinkingPanelId = `thinking-${msg.id}`}
+                    {@const isThinkingExpanded = expandedThinkingMessageIds[msg.id] ?? false}
                     <div class="mt-2 p-2 rounded-lg bg-black/60 border border-slate-700/60 text-slate-300 font-code text-sm sm:text-sm">
-                      <div class="text-[12px] font-ui text-amber-300 font-bold uppercase mb-1">🧠 Chain-of-Thought ({msg.agentName}):</div>
-                      <div class="markdown-body whitespace-pre-wrap leading-tight text-slate-200">{@html renderMarkdown(msg.thinking)}</div>
+                      <button
+                        type="button"
+                        aria-expanded={isThinkingExpanded}
+                        aria-controls={thinkingPanelId}
+                        on:click={() => toggleThinking(msg.id)}
+                        class="flex w-full items-center gap-1 text-left text-[12px] font-ui text-amber-300 font-bold uppercase focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan-400 focus-visible:outline-offset-2"
+                      >
+                        <ChevronDown
+                          size={14}
+                          class={`shrink-0 transition-transform ${isThinkingExpanded ? 'rotate-180' : ''}`}
+                        />
+                        <span>🧠 Chain-of-Thought ({msg.agentName})</span>
+                      </button>
+                      <div
+                        id={thinkingPanelId}
+                        class="markdown-body whitespace-pre-wrap leading-tight text-slate-200 mt-1"
+                        hidden={!isThinkingExpanded}
+                      >{@html renderMarkdown(msg.thinking)}</div>
                     </div>
                   {/if}
 
@@ -535,6 +580,8 @@
             </div>
           {/if}
         </main>
+        <ExecutionInspector project={$activeProject} {connectionStatus} />
+        </div>
       {/if}
 
       <!-- Faixa dedicada ao companheiro, fora da área de leitura. -->
@@ -660,6 +707,13 @@
   .view-toolbar :global(button) { font-size: 12px; min-height: 32px; box-shadow: none; border-radius: 5px; white-space: nowrap; }
   .droid-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 12px; }
   .conversation { padding: 22px 28px 24px; background: radial-gradient(ellipse at 80% 80%, #10213250, transparent 65%); }
+  .console-workspace { display: flex; overflow: hidden; background: #0a111c; }
+  .bridge-diagnostic { position: relative; z-index: 32; display: flex; align-items: center; gap: 11px; padding: 10px 28px; border-bottom: 1px solid #654b2c; color: #f4c979; background: linear-gradient(90deg, #3a2917, #201b17); }
+  .bridge-diagnostic-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 2px; }
+  .bridge-diagnostic-copy strong { color: #ffe1a5; font-size: 11px; }
+  .bridge-diagnostic-copy span { color: #cdb995; font-size: 10px; line-height: 1.4; }
+  .bridge-diagnostic button { display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto; min-height: 32px; padding: 0 10px; border: 1px solid #8b6939; border-radius: 6px; color: #ffdfa0; background: #332719; font-size: 10px; cursor: pointer; }
+  .bridge-diagnostic button:hover { border-color: #c39b55; background: #47351d; }
   .session-banner { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; color: #9baec6; font-size: 12px; }
   .session-banner > span:not(.session-rule) { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
   .session-rule { height: 1px; flex: 1; background: #253449; }
@@ -716,6 +770,7 @@
     .deck-header { padding: 20px; }
     .deck-toolbar, .view-toolbar { padding-left: 20px; padding-right: 20px; }
     .conversation { padding-left: 20px; padding-right: 20px; }
+    .bridge-diagnostic { padding-left: 20px; padding-right: 20px; }
     .execution-state { display: none; }
   }
   @media (max-width: 760px) {
@@ -724,6 +779,9 @@
     .header-actions { gap: 6px; }
     .deck-toolbar, .view-toolbar { padding: 10px 14px; }
     .conversation { padding: 16px 14px 20px; }
+    .bridge-diagnostic { align-items: flex-start; padding: 10px 14px; }
+    .bridge-diagnostic button { font-size: 0; }
+    .bridge-diagnostic button :global(svg) { width: 15px; height: 15px; }
     .message-card { max-width: 100%; padding: 14px; }
     .command-footer { padding: 12px; }
     .command-composer { gap: 6px; padding: 8px; flex-wrap: wrap; }

@@ -5,12 +5,17 @@
   import MissionBacklogModal from './components/tasks/MissionBacklogModal.svelte';
   import DroidForgeModal from './components/droids/DroidForgeModal.svelte';
   import AiSettingsModal from './components/terminal/AiSettingsModal.svelte';
+  import UiFeedback from './components/UiFeedback.svelte';
   import { GridWebSocketClient, type ConnectionState } from './lib/socket/client';
   import { handleIncomingEvent } from './lib/stores/gridStore';
   import { loadProjectsFromDatabase } from './lib/stores/projectStore';
 
-  let client: GridWebSocketClient;
+  let client: GridWebSocketClient | null = null;
   let connectionStatus: ConnectionState = 'CONNECTING';
+
+  function reconnectBridge() {
+    client?.connect();
+  }
 
   onMount(() => {
     loadProjectsFromDatabase();
@@ -28,7 +33,7 @@
     return () => {
       unsubState();
       unsubEvents();
-      client.disconnect();
+      client?.disconnect();
     };
   });
 </script>
@@ -39,11 +44,12 @@
 
   <!-- 2. Área Central: Cyber-Deck Terminal CRT com Fundo Temático The Grid Metropolis -->
   <main class="flex-1 min-w-0 h-full overflow-hidden flex flex-col relative bg-[#04060c]">
-    <CrtTerminal {connectionStatus} />
+    <CrtTerminal {connectionStatus} onReconnect={reconnectBridge} />
   </main>
 
   <!-- Modais Compartilhados (Painel de Missões & Backlog Linear & Configuração de IA) -->
   <MissionBacklogModal />
   <DroidForgeModal />
   <AiSettingsModal />
+  <UiFeedback />
 </div>

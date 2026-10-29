@@ -68,10 +68,7 @@ pub struct DispatchPayload {
 
 impl Task {
     /// Constrói uma nova tarefa a partir de uma requisição de despacho.
-    pub fn from_dispatch(
-        dispatch: &DispatchPayload,
-        created_at: impl Into<String>,
-    ) -> Self {
+    pub fn from_dispatch(dispatch: &DispatchPayload, created_at: impl Into<String>) -> Self {
         Self {
             task_id: dispatch.task.task_id.clone(),
             project_id: dispatch.project_id.clone(),

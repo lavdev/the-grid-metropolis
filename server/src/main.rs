@@ -1,10 +1,14 @@
-use std::net::SocketAddr;
-use axum::{routing::get, Json, Router};
-use serde_json::{json, Value};
+use axum::http::{
+    HeaderValue, Method,
+    header::{AUTHORIZATION, CONTENT_TYPE},
+};
+use axum::{Json, Router, routing::get};
+use serde_json::{Value, json};
 use server::api::api_routes;
 use server::state::create_shared_state;
-use tower_http::cors::{Any, CorsLayer};
-use tracing::{info, Level};
+use std::net::SocketAddr;
+use tower_http::cors::{AllowOrigin, CorsLayer};
+use tracing::{Level, info};
 use tracing_subscriber::FmtSubscriber;
 
 #[tokio::main]
@@ -16,11 +20,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing::subscriber::set_global_default(subscriber)
         .expect("Falha ao configurar global tracing subscriber");
 
-    // Configuração de CORS permissivo para dev do frontend (Svelte/Phaser)
+    // Aceita apenas as origens usadas pelo Vite e pelo WebView local do Tauri.
+    let allowed_origins = [
+        HeaderValue::from_static("http://localhost:5173"),
+        HeaderValue::from_static("http://localhost:4173"),
+        HeaderValue::from_static("http://tauri.localhost"),
+        HeaderValue::from_static("tauri://localhost"),
+    ];
     let cors = CorsLayer::new()
-        .allow_origin(Any)
-        .allow_methods(Any)
-        .allow_headers(Any);
+        .allow_origin(AllowOrigin::list(allowed_origins))
+        .allow_methods([
+            Method::GET,
+            Method::POST,
+            Method::PUT,
+            Method::DELETE,
+            Method::OPTIONS,
+        ])
+        .allow_headers([CONTENT_TYPE, AUTHORIZATION]);
 
     // Inicializa o banco de dados relacional SQLite local
     let db = server::db::Database::init(server::db::Database::default_db_path())?;
@@ -39,8 +55,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .parse()
         .unwrap_or(3000);
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    info!("🚀 The Grid Metropolis Bridge Server ativo em http://{}", addr);
+    let addr = SocketAddr::from(([127, 0, 0, 1], port));
+    info!(
+        "🚀 The Grid Metropolis Bridge Server ativo em http://{}",
+        addr
+    );
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;

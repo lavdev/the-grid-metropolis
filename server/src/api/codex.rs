@@ -1,15 +1,15 @@
-use std::path::{Path, PathBuf};
-use std::process::Stdio;
 use axum::{
     extract::Json,
     response::{
-        sse::{Event, Sse},
         IntoResponse, Response,
+        sse::{Event, Sse},
     },
 };
 use futures_util::stream::Stream;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::path::{Path, PathBuf};
+use std::process::Stdio;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use tracing::error;
@@ -176,7 +176,8 @@ pub async fn codex_stream_handler(
 
     if let Some(ref r) = payload.reasoning_effort {
         if !r.is_empty() && r != "default" {
-            cmd.arg("-c").arg(format!("model_reasoning_effort=\"{}\"", r));
+            cmd.arg("-c")
+                .arg(format!("model_reasoning_effort=\"{}\"", r));
         }
     }
 

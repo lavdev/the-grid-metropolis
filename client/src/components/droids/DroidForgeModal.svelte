@@ -10,8 +10,9 @@
     type DroidRole,
     type AvatarType,
   } from '../../lib/stores/droidRosterStore';
-  import { projects } from '../../lib/stores/projectStore';
+  import { projects, syncRosterDroidToProjects } from '../../lib/stores/projectStore';
   import { soundFX } from '../../lib/audio/soundFX';
+  import { confirmAction } from '../../lib/stores/uiFeedbackStore';
   import {
     Bot,
     Plus,
@@ -157,7 +158,7 @@
       .map((s) => s.trim())
       .filter(Boolean);
 
-    saveDroid({
+    const droid = {
       id: formId,
       name: formName.trim(),
       role: formRole,
@@ -169,14 +170,23 @@
       skills: skills.length > 0 ? skills : ['General Operations'],
       maxTokens: formMaxTokens,
       temperature: formTemperature,
-    });
+    };
+
+    saveDroid(droid);
+    const editedDroidId = droid.id;
+    if (editedDroidId) syncRosterDroidToProjects({ ...droid, id: editedDroidId });
 
     soundFX.playPipelineComplete();
     activeTab = 'ROSTER';
   }
 
-  function handleDelete(id: string) {
-    if (confirm('Deseja realmente remover este Droid do Roster corporativo?')) {
+  async function handleDelete(id: string) {
+    if (await confirmAction({
+      title: 'Remover Droid do Roster?',
+      message: 'Este Droid será removido do Roster corporativo.',
+      confirmLabel: 'Remover Droid',
+      tone: 'danger',
+    })) {
       deleteDroid(id);
       soundFX.playKeyClick();
     }

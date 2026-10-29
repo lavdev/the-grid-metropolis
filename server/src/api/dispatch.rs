@@ -1,9 +1,5 @@
-use axum::{
-    extract::State,
-    http::StatusCode,
-    Json,
-};
-use serde_json::{json, Value};
+use axum::{Json, extract::State, http::StatusCode};
+use serde_json::{Value, json};
 use tracing::info;
 
 use crate::api::auth::RequireAuth;
@@ -22,16 +18,24 @@ pub async fn dispatch_handler(
 ) -> Result<(StatusCode, Json<Value>), ApiError> {
     // Validações básicas de integridade do payload
     if payload.project_id.trim().is_empty() {
-        return Err(ApiError::BadRequest("O campo 'projectId' não pode ser vazio".into()));
+        return Err(ApiError::BadRequest(
+            "O campo 'projectId' não pode ser vazio".into(),
+        ));
     }
     if payload.target_agent_id.trim().is_empty() {
-        return Err(ApiError::BadRequest("O campo 'targetAgentId' não pode ser vazio".into()));
+        return Err(ApiError::BadRequest(
+            "O campo 'targetAgentId' não pode ser vazio".into(),
+        ));
     }
     if payload.task.task_id.trim().is_empty() {
-        return Err(ApiError::BadRequest("O campo 'task.taskId' não pode ser vazio".into()));
+        return Err(ApiError::BadRequest(
+            "O campo 'task.taskId' não pode ser vazio".into(),
+        ));
     }
     if payload.task.title.trim().is_empty() {
-        return Err(ApiError::BadRequest("O campo 'task.title' não pode ser vazio".into()));
+        return Err(ApiError::BadRequest(
+            "O campo 'task.title' não pode ser vazio".into(),
+        ));
     }
 
     info!(

@@ -1,4 +1,5 @@
 import { writable, get } from 'svelte/store';
+import { apiUrl } from '../api';
 
 export type AiProvider = 'codex' | 'gemini' | 'anthropic' | 'openai' | 'ollama';
 
@@ -21,7 +22,7 @@ export const codexStatus = writable<CodexStatus>({
 export async function checkCodexStatus(): Promise<CodexStatus> {
   codexStatus.update((s) => ({ ...s, checking: true, error: undefined }));
   try {
-    const res = await fetch('/api/v1/codex/status');
+    const res = await fetch(apiUrl('/api/v1/codex/status'));
     if (!res.ok) {
       throw new Error(`HTTP ${res.status}`);
     }

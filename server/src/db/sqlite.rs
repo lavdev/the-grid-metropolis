@@ -1,9 +1,22 @@
+use rusqlite::backup::Backup;
+use rusqlite::{Connection, OptionalExtension, params};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use rusqlite::{params, Connection, OptionalExtension};
+use std::time::Duration;
 use tracing::{error, info};
 
 use crate::db::models::{ChatMessage, DroidInfo, PipelineState, ProjectMetrics, ProjectTerminal};
+use crate::domain::run::{BudgetConfigError, ProjectExecutionSettings, RunBudgetLimits};
+
+#[derive(Debug, thiserror::Error)]
+pub enum ExecutionSettingsStoreError {
+    #[error("project not found")]
+    ProjectNotFound,
+    #[error("invalid project execution budget: {0}")]
+    InvalidBudget(#[from] BudgetConfigError),
+    #[error("execution settings storage error: {0}")]
+    Storage(String),
+}
 
 #[derive(Clone)]
 pub struct Database {
@@ -17,8 +30,24 @@ impl Database {
             let _ = std::fs::create_dir_all(parent);
         }
 
-        let conn = Connection::open(path_ref)?;
-        conn.execute_batch("
+        if !path_ref.exists() {
+            if let Some(legacy_path) = std::env::var_os("GRID_METROPOLIS_LEGACY_DB") {
+                let legacy_path = PathBuf::from(legacy_path);
+                if legacy_path.is_file() && legacy_path != path_ref {
+                    if let Err(error) = migrate_legacy_database(&legacy_path, path_ref) {
+                        tracing::warn!(
+                            "Não foi possível migrar o banco legado {:?}: {}",
+                            legacy_path,
+                            error
+                        );
+                    }
+                }
+            }
+        }
+
+        let mut conn = Connection::open(path_ref)?;
+        conn.execute_batch(
+            "
             PRAGMA journal_mode = WAL;
             PRAGMA synchronous = NORMAL;
             PRAGMA foreign_keys = ON;
@@ -94,7 +123,10 @@ impl Database {
                 key TEXT PRIMARY KEY,
                 value_json TEXT NOT NULL
             );
-        ")?;
+        ",
+        )?;
+
+        Self::apply_migrations(&mut conn)?;
 
         let db = Self {
             conn: Arc::new(Mutex::new(conn)),
@@ -103,13 +135,41 @@ impl Database {
         // Seed dados padrão se banco estiver vazio
         db.seed_defaults_if_empty()?;
 
-        info!("💾 Banco de dados SQLite persistente inicializado em {:?}", path_ref);
+        info!(
+            "💾 Banco de dados SQLite persistente inicializado em {:?}",
+            path_ref
+        );
         Ok(db)
     }
 
     pub fn default_db_path() -> PathBuf {
+        if let Some(data_directory) = std::env::var_os("GRID_METROPOLIS_DATA_DIR") {
+            return PathBuf::from(data_directory).join("grid.db");
+        }
+
         let base = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
         base.join("data").join("grid.db")
+    }
+
+    fn apply_migrations(conn: &mut Connection) -> Result<(), rusqlite::Error> {
+        let current_version: i64 =
+            conn.pragma_query_value(None, "user_version", |row| row.get(0))?;
+        if current_version < 1 {
+            let tx = conn.transaction()?;
+            tx.execute_batch(
+                "CREATE TABLE IF NOT EXISTS project_execution_settings (
+                    project_id TEXT PRIMARY KEY,
+                    max_model_turns_per_run INTEGER NOT NULL CHECK (max_model_turns_per_run > 0),
+                    max_elapsed_seconds_per_run INTEGER NOT NULL CHECK (max_elapsed_seconds_per_run > 0),
+                    max_tokens_per_run INTEGER NOT NULL CHECK (max_tokens_per_run > 0),
+                    updated_at INTEGER NOT NULL,
+                    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+                );",
+            )?;
+            tx.pragma_update(None, "user_version", 1_i64)?;
+            tx.commit()?;
+        }
+        Ok(())
     }
 
     fn seed_defaults_if_empty(&self) -> Result<(), rusqlite::Error> {
@@ -119,7 +179,9 @@ impl Database {
         };
 
         if count == 0 {
-            info!("🌱 Banco de dados novo detectado. Semeando projeto inicial 'The Notex' e Squad oficial.");
+            info!(
+                "🌱 Banco de dados novo detectado. Semeando projeto inicial 'The Notex' e Squad oficial."
+            );
             let notex = ProjectTerminal {
                 id: "proj-notex".into(),
                 name: "The Notex".into(),
@@ -247,32 +309,55 @@ impl Database {
                 let metrics_json: String = row.get(8)?;
                 let pipeline_json: String = row.get(9)?;
 
-                Ok((id, name, path, model, status, accent_color, active_droid_id, thread_id, metrics_json, pipeline_json))
+                Ok((
+                    id,
+                    name,
+                    path,
+                    model,
+                    status,
+                    accent_color,
+                    active_droid_id,
+                    thread_id,
+                    metrics_json,
+                    pipeline_json,
+                ))
             })
             .map_err(|e| e.to_string())?;
 
         let mut projects = Vec::new();
 
         for r in rows {
-            let (id, name, path, model, status, accent_color, active_droid_id, thread_id, metrics_json, pipeline_json) =
-                r.map_err(|e| e.to_string())?;
+            let (
+                id,
+                name,
+                path,
+                model,
+                status,
+                accent_color,
+                active_droid_id,
+                thread_id,
+                metrics_json,
+                pipeline_json,
+            ) = r.map_err(|e| e.to_string())?;
 
-            let metrics: ProjectMetrics = serde_json::from_str(&metrics_json).unwrap_or(ProjectMetrics {
-                tokens_in: 0,
-                tokens_out: 0,
-                latency_ms: 0,
-                cpu: "||      ".into(),
-                mem: "|       ".into(),
-            });
+            let metrics: ProjectMetrics =
+                serde_json::from_str(&metrics_json).unwrap_or(ProjectMetrics {
+                    tokens_in: 0,
+                    tokens_out: 0,
+                    latency_ms: 0,
+                    cpu: "||      ".into(),
+                    mem: "|       ".into(),
+                });
 
-            let pipeline: PipelineState = serde_json::from_str(&pipeline_json).unwrap_or(PipelineState {
-                is_active: false,
-                stage: "IDLE".into(),
-                current_droid_id: active_droid_id.clone(),
-                prompt: "".into(),
-                progress_percent: 0,
-                status_text: "Aguardando instrução".into(),
-            });
+            let pipeline: PipelineState =
+                serde_json::from_str(&pipeline_json).unwrap_or(PipelineState {
+                    is_active: false,
+                    stage: "IDLE".into(),
+                    current_droid_id: active_droid_id.clone(),
+                    prompt: "".into(),
+                    progress_percent: 0,
+                    status_text: "Aguardando instrução".into(),
+                });
 
             // Carrega droids do projeto
             let mut d_stmt = conn
@@ -358,6 +443,95 @@ impl Database {
         .map_err(|e| e.to_string())
     }
 
+    pub fn get_project_execution_settings(
+        &self,
+        project_id: &str,
+    ) -> Result<Option<ProjectExecutionSettings>, ExecutionSettingsStoreError> {
+        let conn = self
+            .conn
+            .lock()
+            .map_err(|error| ExecutionSettingsStoreError::Storage(error.to_string()))?;
+        let project_exists: bool = conn
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM projects WHERE id = ?1)",
+                params![project_id],
+                |row| row.get(0),
+            )
+            .map_err(|error| ExecutionSettingsStoreError::Storage(error.to_string()))?;
+        if !project_exists {
+            return Err(ExecutionSettingsStoreError::ProjectNotFound);
+        }
+
+        conn.query_row(
+            "SELECT max_model_turns_per_run, max_elapsed_seconds_per_run, max_tokens_per_run
+             FROM project_execution_settings WHERE project_id = ?1",
+            params![project_id],
+            |row| {
+                Ok(ProjectExecutionSettings {
+                    budgets: RunBudgetLimits {
+                        max_model_turns_per_run: row.get::<_, i64>(0)? as u64,
+                        max_elapsed_seconds_per_run: row.get::<_, i64>(1)? as u64,
+                        max_tokens_per_run: row.get::<_, i64>(2)? as u64,
+                    },
+                })
+            },
+        )
+        .optional()
+        .map_err(|error| ExecutionSettingsStoreError::Storage(error.to_string()))
+    }
+
+    pub fn save_project_execution_settings(
+        &self,
+        project_id: &str,
+        budgets: RunBudgetLimits,
+    ) -> Result<ProjectExecutionSettings, ExecutionSettingsStoreError> {
+        budgets.validate()?;
+        let mut conn = self
+            .conn
+            .lock()
+            .map_err(|error| ExecutionSettingsStoreError::Storage(error.to_string()))?;
+        let tx = conn
+            .transaction()
+            .map_err(|error| ExecutionSettingsStoreError::Storage(error.to_string()))?;
+        let project_exists: bool = tx
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM projects WHERE id = ?1)",
+                params![project_id],
+                |row| row.get(0),
+            )
+            .map_err(|error| ExecutionSettingsStoreError::Storage(error.to_string()))?;
+        if !project_exists {
+            return Err(ExecutionSettingsStoreError::ProjectNotFound);
+        }
+
+        let updated_at = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as i64;
+        tx.execute(
+            "INSERT INTO project_execution_settings (
+                project_id, max_model_turns_per_run, max_elapsed_seconds_per_run,
+                max_tokens_per_run, updated_at
+             ) VALUES (?1, ?2, ?3, ?4, ?5)
+             ON CONFLICT(project_id) DO UPDATE SET
+                max_model_turns_per_run = excluded.max_model_turns_per_run,
+                max_elapsed_seconds_per_run = excluded.max_elapsed_seconds_per_run,
+                max_tokens_per_run = excluded.max_tokens_per_run,
+                updated_at = excluded.updated_at",
+            params![
+                project_id,
+                budgets.max_model_turns_per_run as i64,
+                budgets.max_elapsed_seconds_per_run as i64,
+                budgets.max_tokens_per_run as i64,
+                updated_at,
+            ],
+        )
+        .map_err(|error| ExecutionSettingsStoreError::Storage(error.to_string()))?;
+        tx.commit()
+            .map_err(|error| ExecutionSettingsStoreError::Storage(error.to_string()))?;
+        Ok(ProjectExecutionSettings { budgets })
+    }
+
     pub fn save_project(&self, proj: &ProjectTerminal) -> Result<(), String> {
         let mut conn = self.conn.lock().map_err(|e| e.to_string())?;
         let now = std::time::SystemTime::now()
@@ -400,8 +574,11 @@ impl Database {
         ).map_err(|e| e.to_string())?;
 
         // Atualiza droids do projeto
-        tx.execute("DELETE FROM project_droids WHERE project_id = ?", params![proj.id])
-            .map_err(|e| e.to_string())?;
+        tx.execute(
+            "DELETE FROM project_droids WHERE project_id = ?",
+            params![proj.id],
+        )
+        .map_err(|e| e.to_string())?;
 
         for (idx, d) in proj.droids.iter().enumerate() {
             tx.execute(
@@ -428,7 +605,10 @@ impl Database {
 
         // Salva mensagens (insere apenas as que não existirem)
         for (idx, m) in proj.messages.iter().enumerate() {
-            let files_json = m.files_modified.as_ref().map(|f| serde_json::to_string(f).unwrap_or_default());
+            let files_json = m
+                .files_modified
+                .as_ref()
+                .map(|f| serde_json::to_string(f).unwrap_or_default());
             let msg_created = now + idx as i64;
 
             tx.execute(
@@ -474,7 +654,10 @@ impl Database {
             .unwrap_or_default()
             .as_millis() as i64;
 
-        let files_json = msg.files_modified.as_ref().map(|f| serde_json::to_string(f).unwrap_or_default());
+        let files_json = msg
+            .files_modified
+            .as_ref()
+            .map(|f| serde_json::to_string(f).unwrap_or_default());
 
         conn.execute(
             "INSERT INTO project_messages (id, project_id, sender, agent_name, agent_role, agent_model, content, thinking, timestamp, status, files_modified_json, created_at)
@@ -503,12 +686,17 @@ impl Database {
         Ok(())
     }
 
-    pub fn update_project_thread_id(&self, project_id: &str, thread_id: Option<&str>) -> Result<(), String> {
+    pub fn update_project_thread_id(
+        &self,
+        project_id: &str,
+        thread_id: Option<&str>,
+    ) -> Result<(), String> {
         let conn = self.conn.lock().map_err(|e| e.to_string())?;
         conn.execute(
             "UPDATE projects SET thread_id = ?1 WHERE id = ?2",
             params![thread_id, project_id],
-        ).map_err(|e| e.to_string())?;
+        )
+        .map_err(|e| e.to_string())?;
         Ok(())
     }
 
@@ -517,7 +705,8 @@ impl Database {
         conn.execute(
             "DELETE FROM project_messages WHERE project_id = ?1 AND id = ?2",
             params![project_id, msg_id],
-        ).map_err(|e| e.to_string())?;
+        )
+        .map_err(|e| e.to_string())?;
         Ok(())
     }
 
@@ -526,7 +715,100 @@ impl Database {
         conn.execute(
             "DELETE FROM project_messages WHERE project_id = ?1",
             params![project_id],
-        ).map_err(|e| e.to_string())?;
+        )
+        .map_err(|e| e.to_string())?;
         Ok(())
+    }
+}
+
+fn migrate_legacy_database(source_path: &Path, destination_path: &Path) -> Result<(), String> {
+    let source = Connection::open(source_path).map_err(|error| error.to_string())?;
+    let mut destination = Connection::open(destination_path).map_err(|error| error.to_string())?;
+    let backup = Backup::new(&source, &mut destination).map_err(|error| error.to_string())?;
+    backup
+        .run_to_completion(32, Duration::from_millis(50), None)
+        .map_err(|error| error.to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn project(id: &str) -> ProjectTerminal {
+        ProjectTerminal {
+            id: id.into(),
+            name: "Budget Test".into(),
+            path: std::env::temp_dir().to_string_lossy().into_owned(),
+            model: "test-model".into(),
+            status: "ACTIVE".into(),
+            accent_color: "#00f0ff".into(),
+            metrics: ProjectMetrics {
+                tokens_in: 0,
+                tokens_out: 0,
+                latency_ms: 0,
+                cpu: String::new(),
+                mem: String::new(),
+            },
+            droids: Vec::new(),
+            active_droid_id: "test-droid".into(),
+            messages: Vec::new(),
+            pipeline: PipelineState {
+                is_active: false,
+                stage: "IDLE".into(),
+                current_droid_id: "test-droid".into(),
+                prompt: String::new(),
+                progress_percent: 0,
+                status_text: String::new(),
+            },
+            thread_id: None,
+        }
+    }
+
+    #[test]
+    fn project_execution_settings_are_required_and_persisted() {
+        let db = Database::init(":memory:").unwrap();
+        let project = project("proj-budget-test");
+        db.save_project(&project).unwrap();
+
+        assert_eq!(
+            db.get_project_execution_settings(&project.id).unwrap(),
+            None
+        );
+
+        let budgets = RunBudgetLimits {
+            max_model_turns_per_run: 3,
+            max_elapsed_seconds_per_run: 900,
+            max_tokens_per_run: 80_000,
+        };
+        let saved = db
+            .save_project_execution_settings(&project.id, budgets)
+            .unwrap();
+        assert_eq!(saved, ProjectExecutionSettings { budgets });
+        assert_eq!(
+            db.get_project_execution_settings(&project.id).unwrap(),
+            Some(saved)
+        );
+    }
+
+    #[test]
+    fn settings_reject_zero_values_and_unknown_projects() {
+        let db = Database::init(":memory:").unwrap();
+        let invalid = RunBudgetLimits {
+            max_model_turns_per_run: 0,
+            max_elapsed_seconds_per_run: 900,
+            max_tokens_per_run: 80_000,
+        };
+        assert!(
+            db.save_project_execution_settings("proj-missing", invalid)
+                .is_err()
+        );
+        assert!(db.get_project_execution_settings("proj-missing").is_err());
+
+        let project = project("proj-budget-invalid");
+        db.save_project(&project).unwrap();
+        assert!(
+            db.save_project_execution_settings(&project.id, invalid)
+                .is_err()
+        );
     }
 }

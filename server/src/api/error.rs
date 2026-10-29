@@ -1,7 +1,7 @@
 use axum::{
+    Json,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
 use serde_json::json;
 use thiserror::Error;
@@ -30,13 +30,23 @@ pub enum ApiError {
 impl From<StateError> for ApiError {
     fn from(err: StateError) -> Self {
         match err {
-            StateError::AgentNotFound(msg) => ApiError::NotFound(format!("Agente não encontrado: {}", msg)),
-            StateError::PodNotFound(msg) => ApiError::NotFound(format!("Pod não encontrado: {}", msg)),
-            StateError::TaskNotFound(msg) => ApiError::NotFound(format!("Tarefa não encontrada: {}", msg)),
+            StateError::AgentNotFound(msg) => {
+                ApiError::NotFound(format!("Agente não encontrado: {}", msg))
+            }
+            StateError::PodNotFound(msg) => {
+                ApiError::NotFound(format!("Pod não encontrado: {}", msg))
+            }
+            StateError::TaskNotFound(msg) => {
+                ApiError::NotFound(format!("Tarefa não encontrada: {}", msg))
+            }
             StateError::DuplicateAgent(msg)
             | StateError::DuplicatePod(msg)
-            | StateError::DuplicateTask(msg) => ApiError::Conflict(format!("Recurso duplicado: {}", msg)),
-            StateError::PodCapacityExceeded(msg) => ApiError::BadRequest(format!("Capacidade excedida: {}", msg)),
+            | StateError::DuplicateTask(msg) => {
+                ApiError::Conflict(format!("Recurso duplicado: {}", msg))
+            }
+            StateError::PodCapacityExceeded(msg) => {
+                ApiError::BadRequest(format!("Capacidade excedida: {}", msg))
+            }
         }
     }
 }

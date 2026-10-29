@@ -3,6 +3,7 @@ import type { WebSocketEvent } from '../../types';
 export type ConnectionState = 'CONNECTING' | 'CONNECTED' | 'DISCONNECTED';
 
 type EventListener = (event: WebSocketEvent) => void;
+const MAX_BUFFERED_EVENTS = 100;
 
 export class GridWebSocketClient {
   private ws: WebSocket | null = null;
@@ -12,14 +13,17 @@ export class GridWebSocketClient {
   private reconnectTimeout: number | null = null;
   private reconnectAttempts = 0;
   private maxReconnectDelay = 10000;
+  private intentionalDisconnect = false;
+  private bufferedEvents: WebSocketEvent[] = [];
   public connectionState: ConnectionState = 'DISCONNECTED';
 
   constructor(url?: string) {
     if (url) {
       this.url = url;
     } else {
+      const isTauriDesktop = window.location.protocol === 'tauri:' || window.location.hostname === 'tauri.localhost';
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      this.url = `${protocol}//${window.location.host}/ws`;
+      this.url = isTauriDesktop ? 'ws://127.0.0.1:3000/ws' : `${protocol}//${window.location.host}/ws`;
     }
   }
 
@@ -28,17 +32,26 @@ export class GridWebSocketClient {
       return;
     }
 
+    this.intentionalDisconnect = false;
+    if (this.reconnectTimeout !== null) {
+      window.clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+
     this.setConnectionState('CONNECTING');
     try {
-      this.ws = new WebSocket(this.url);
+      const socket = new WebSocket(this.url);
+      this.ws = socket;
 
-      this.ws.onopen = () => {
+      socket.onopen = () => {
+        if (this.ws !== socket) return;
         this.reconnectAttempts = 0;
         this.setConnectionState('CONNECTED');
         console.log('⚡ Conectado ao hub The Grid Metropolis via WebSocket');
       };
 
-      this.ws.onmessage = (event) => {
+      socket.onmessage = (event) => {
+        if (this.ws !== socket) return;
         try {
           const parsed: WebSocketEvent = JSON.parse(event.data);
           this.notifyListeners(parsed);
@@ -47,12 +60,15 @@ export class GridWebSocketClient {
         }
       };
 
-      this.ws.onclose = () => {
+      socket.onclose = () => {
+        if (this.ws !== socket) return;
+        this.ws = null;
         this.setConnectionState('DISCONNECTED');
-        this.scheduleReconnect();
+        if (!this.intentionalDisconnect) this.scheduleReconnect();
       };
 
-      this.ws.onerror = (err) => {
+      socket.onerror = (err) => {
+        if (this.ws !== socket) return;
         console.warn('Alerta na conexão WebSocket:', err);
       };
     } catch (e) {
@@ -63,6 +79,11 @@ export class GridWebSocketClient {
 
   public subscribe(listener: EventListener): () => void {
     this.listeners.add(listener);
+    if (this.bufferedEvents.length > 0) {
+      const pendingEvents = this.bufferedEvents;
+      this.bufferedEvents = [];
+      pendingEvents.forEach(listener);
+    }
     return () => this.listeners.delete(listener);
   }
 
@@ -78,11 +99,19 @@ export class GridWebSocketClient {
   }
 
   private notifyListeners(event: WebSocketEvent) {
+    if (this.listeners.size === 0) {
+      this.bufferedEvents.push(event);
+      if (this.bufferedEvents.length > MAX_BUFFERED_EVENTS) {
+        this.bufferedEvents.shift();
+      }
+      return;
+    }
+
     this.listeners.forEach((listener) => listener(event));
   }
 
   private scheduleReconnect() {
-    if (this.reconnectTimeout) return;
+    if (this.intentionalDisconnect || this.reconnectTimeout !== null) return;
 
     const delay = Math.min(1000 * Math.pow(1.5, this.reconnectAttempts), this.maxReconnectDelay);
     this.reconnectAttempts++;
@@ -95,13 +124,15 @@ export class GridWebSocketClient {
   }
 
   public disconnect() {
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
+    this.intentionalDisconnect = true;
+    if (this.reconnectTimeout !== null) {
+      window.clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
     }
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
+    const socket = this.ws;
+    this.ws = null;
+    if (socket) {
+      socket.close();
     }
     this.setConnectionState('DISCONNECTED');
   }

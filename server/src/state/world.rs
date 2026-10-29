@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::{broadcast, RwLock};
+use tokio::sync::{RwLock, broadcast};
 use tracing::{info, warn};
 
 use crate::domain::{
@@ -43,7 +43,10 @@ impl WorldState {
     pub fn broadcast(&self, event: WebSocketEvent) {
         if let Err(e) = self.event_tx.send(event) {
             // Em caso de zero clientes conectados, o broadcast retorna SendError normal
-            warn!("Nenhum consumidor ativo no canal de broadcast WebSocket: {}", e);
+            warn!(
+                "Nenhum consumidor ativo no canal de broadcast WebSocket: {}",
+                e
+            );
         }
     }
 

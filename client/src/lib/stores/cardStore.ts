@@ -1,6 +1,7 @@
 import { writable, get } from 'svelte/store';
 import type { ActionCard, PlayedCardRecord } from '../../types/card';
 import { agents, tasks } from './gridStore';
+import { notify } from './uiFeedbackStore';
 
 export const STARTER_DECK: ActionCard[] = [
   {
@@ -151,7 +152,7 @@ export function playCard(cardId: string, assignedAgentOverrideId?: string): bool
 
   if (!targetCard) return false;
   if (currentEnergy < targetCard.energyCost) {
-    alert(`⚡ Energia insuficiente! Custo da carta: ${targetCard.energyCost} | Energia atual: ${currentEnergy}`);
+    notify('Energia insuficiente', `Custo da carta: ${targetCard.energyCost} | Energia atual: ${currentEnergy}`, 'error');
     return false;
   }
 
