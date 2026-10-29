@@ -49,6 +49,28 @@ export interface ProjectTerminal {
   threadId?: string;
 }
 
+const EMPTY_PROJECT_ID = '__no_workspace__';
+const EMPTY_PROJECT: ProjectTerminal = {
+  id: EMPTY_PROJECT_ID,
+  name: 'Nenhum workspace selecionado',
+  path: 'Crie um workspace para iniciar uma sessão persistente',
+  model: '—',
+  status: 'ACTIVE',
+  accentColor: '#64748b',
+  metrics: { tokensIn: 0, tokensOut: 0, latencyMs: 0, cpu: '—', mem: '—' },
+  droids: [],
+  activeDroidId: '',
+  messages: [],
+  pipeline: {
+    isActive: false,
+    stage: 'IDLE',
+    currentDroidId: '',
+    prompt: '',
+    progressPercent: 0,
+    statusText: 'Nenhum workspace persistido',
+  },
+};
+
 const INITIAL_PROJECTS: ProjectTerminal[] = [
   {
     id: 'proj-notex',
@@ -153,6 +175,8 @@ if (typeof window !== 'undefined') {
     try {
       if (id) {
         window.localStorage.setItem(ACTIVE_PROJECT_STORAGE_KEY, id);
+      } else {
+        window.localStorage.removeItem(ACTIVE_PROJECT_STORAGE_KEY);
       }
     } catch (e) {
       console.warn('Erro ao persistir activeProjectId:', e);
@@ -165,20 +189,66 @@ export const projectSearchQuery = writable<string>('');
 export const activeProject = derived(
   [projects, activeProjectId],
   ([$projects, $activeProjectId]) => {
-    return $projects.find((p) => p.id === $activeProjectId) || $projects[0];
+    return $projects.find((p) => p.id === $activeProjectId) || $projects[0] || EMPTY_PROJECT;
   }
 );
 
 // --- PERSISTÊNCIA EM BANCO DE DADOS RELACIONAL SQLITE ---
+const messagePersistTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+async function persistProjectMessage(projectId: string, message: ChatMessage): Promise<void> {
+  try {
+    const res = await fetch(`/api/v1/projects/${projectId}/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...message, projectId }),
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  } catch (err) {
+    console.error(`[SQLite] Erro ao persistir mensagem do projeto ${projectId}:`, err);
+  }
+}
+
+function queueProjectMessagePersistence(projectId: string, messageId: string, delayMs = 350): void {
+  const key = `${projectId}:${messageId}`;
+  const pendingTimer = messagePersistTimers.get(key);
+  if (pendingTimer) clearTimeout(pendingTimer);
+
+  const timer = setTimeout(() => {
+    messagePersistTimers.delete(key);
+    const project = get(projects).find((item) => item.id === projectId);
+    const message = project?.messages.find((item) => item.id === messageId);
+    if (message) void persistProjectMessage(projectId, message);
+  }, delayMs);
+
+  messagePersistTimers.set(key, timer);
+}
+
+function persistProjectSnapshot(projectId: string): void {
+  const project = get(projects).find((item) => item.id === projectId);
+  if (project) void syncProjectToDatabase(project);
+}
+
+function getProjectThreadContext(projectId: string) {
+  const project = get(projects).find((item) => item.id === projectId);
+  return {
+    threadId: project?.threadId,
+    onThreadStarted: (threadId: string) => setProjectThreadId(projectId, threadId),
+  };
+}
+
 export async function loadProjectsFromDatabase(): Promise<ProjectTerminal[]> {
   try {
     const res = await fetch('/api/v1/projects');
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data: ProjectTerminal[] = await res.json();
-    if (data && data.length > 0) {
+    if (Array.isArray(data)) {
       projects.set(data);
       const savedActiveId = typeof window !== 'undefined' ? window.localStorage.getItem(ACTIVE_PROJECT_STORAGE_KEY) : null;
-      if (savedActiveId && data.some((p) => p.id === savedActiveId)) {
+      if (data.length === 0) {
+        activeProjectId.set('');
+      } else if (savedActiveId && data.some((p) => p.id === savedActiveId)) {
         activeProjectId.set(savedActiveId);
       } else {
         const activeId = get(activeProjectId);
@@ -196,11 +266,12 @@ export async function loadProjectsFromDatabase(): Promise<ProjectTerminal[]> {
 
 export async function syncProjectToDatabase(project: ProjectTerminal): Promise<void> {
   try {
-    await fetch('/api/v1/projects', {
+    const res = await fetch('/api/v1/projects', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(project),
     });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
   } catch (err) {
     console.error('[SQLite] Erro ao sincronizar projeto com o backend:', err);
   }
@@ -219,7 +290,7 @@ export async function syncProjectThreadToDatabase(projectId: string, threadId?: 
 }
 
 export function selectProject(id: string) {
-  activeProjectId.set(id);
+  if (id) activeProjectId.set(id);
 }
 
 export function toggleSidebar() {
@@ -264,6 +335,7 @@ function appendMessageToken(projectId: string, msgId: string, token: string, isT
       return p;
     });
   });
+  queueProjectMessagePersistence(projectId, msgId);
 }
 
 function finalizeMessage(
@@ -298,6 +370,7 @@ function finalizeMessage(
       return p;
     });
   });
+  queueProjectMessagePersistence(projectId, msgId, 0);
 }
 
 /**
@@ -307,7 +380,7 @@ export async function sendCommandToActiveProject(commandText: string) {
   if (!commandText.trim()) return;
 
   const currentProj = get(activeProject);
-  if (!currentProj) return;
+  if (!currentProj || currentProj.id === EMPTY_PROJECT_ID) return;
 
   const timeStr = getTimeStr();
 
@@ -362,6 +435,9 @@ export async function sendCommandToActiveProject(commandText: string) {
       });
     });
 
+    queueProjectMessagePersistence(currentProj.id, userMsg.id, 500);
+    queueProjectMessagePersistence(currentProj.id, soloMsgId, 500);
+
     updateDroidState(currentProj.id, soloDroid.id, 'WORKING', `Processando: "${commandText.slice(0, 28)}..."`);
 
     try {
@@ -370,6 +446,7 @@ export async function sendCommandToActiveProject(commandText: string) {
         workingDir: currentProj.path,
         droidName: soloDroid.name,
         droidRole: soloDroid.role,
+        ...getProjectThreadContext(currentProj.id),
         onToken: (tok) => appendMessageToken(currentProj.id, soloMsgId, tok, false),
         onThinking: (thought) => appendMessageToken(currentProj.id, soloMsgId, thought, true),
       });
@@ -407,12 +484,14 @@ export async function sendCommandToActiveProject(commandText: string) {
 
       soundFX.playPipelineComplete();
       updateDroidState(currentProj.id, soloDroid.id, 'ONLINE', 'Comando executado com sucesso');
+      persistProjectSnapshot(currentProj.id);
     } catch (err: any) {
       finalizeMessage(currentProj.id, soloMsgId, {
         status: 'ERROR',
         content: `Falha na execução: ${err.message}`,
       });
       updateDroidState(currentProj.id, soloDroid.id, 'ONLINE', 'Erro na execução');
+      persistProjectSnapshot(currentProj.id);
     }
 
     return;
@@ -450,6 +529,8 @@ export async function sendCommandToActiveProject(commandText: string) {
     });
   });
 
+  queueProjectMessagePersistence(currentProj.id, userMsg.id, 500);
+
   updateDroidState(currentProj.id, architectDroid.id, 'THINKING', `Estruturando arquitetura para: "${commandText.slice(0, 28)}..."`);
 
   // --- ETAPA 1: O Arquiteto gera a especificação técnica em streaming ---
@@ -478,6 +559,8 @@ export async function sendCommandToActiveProject(commandText: string) {
     });
   });
 
+  queueProjectMessagePersistence(currentProj.id, archMsgId, 500);
+
   let archResult = { text: '', thinking: '', tokensIn: 0, tokensOut: 0, latencyMs: 0, filesModified: [] as string[] };
   try {
     archResult = await streamAiCompletion({
@@ -485,6 +568,7 @@ export async function sendCommandToActiveProject(commandText: string) {
       prompt: `Instrução do usuário: "${commandText}". Atuando como Arquiteto de Software, trace a especificação técnica, requisitos fundamentais e contratos em tópicos diretos para passar a @${coderDroid.name}.`,
       droidName: architectDroid.name,
       droidRole: 'ARQUITETO',
+      ...getProjectThreadContext(currentProj.id),
       onToken: (tok) => appendMessageToken(currentProj.id, archMsgId, tok, false),
       onThinking: (thought) => appendMessageToken(currentProj.id, archMsgId, thought, true),
     });
@@ -553,6 +637,8 @@ export async function sendCommandToActiveProject(commandText: string) {
     });
   });
 
+  queueProjectMessagePersistence(currentProj.id, coderMsgId, 500);
+
   let coderResult = { text: '', thinking: '', tokensIn: 0, tokensOut: 0, latencyMs: 0, filesModified: [] as string[] };
   try {
     coderResult = await streamAiCompletion({
@@ -563,6 +649,7 @@ ${archResult.text}
 Implemente os módulos técnicos em código limpo com blocos de código markdown tipados.`,
       droidName: coderDroid.name,
       droidRole: 'PROGRAMADOR',
+      ...getProjectThreadContext(currentProj.id),
       onToken: (tok) => appendMessageToken(currentProj.id, coderMsgId, tok, false),
       onThinking: (thought) => appendMessageToken(currentProj.id, coderMsgId, thought, true),
     });
@@ -631,6 +718,8 @@ Implemente os módulos técnicos em código limpo com blocos de código markdown
     });
   });
 
+  queueProjectMessagePersistence(currentProj.id, revMsgId, 500);
+
   let revResult = { text: '', thinking: '', tokensIn: 0, tokensOut: 0, latencyMs: 0, filesModified: [] as string[] };
   try {
     revResult = await streamAiCompletion({
@@ -641,6 +730,7 @@ ${coderResult.text}
 Faça um relatório conciso de qualidade, testes, possíveis falhas de segurança e dê o veredito final de aprovação do Pull Request.`,
       droidName: reviewerDroid.name,
       droidRole: 'REVISOR_DE_CODIGO',
+      ...getProjectThreadContext(currentProj.id),
       onToken: (tok) => appendMessageToken(currentProj.id, revMsgId, tok, false),
       onThinking: (thought) => appendMessageToken(currentProj.id, revMsgId, thought, true),
     });
@@ -687,6 +777,7 @@ Faça um relatório conciso de qualidade, testes, possíveis falhas de seguranç
 
   updateDroidState(currentProj.id, reviewerDroid.id, 'ONLINE', 'Revisão aprovada');
   updateDroidState(currentProj.id, architectDroid.id, 'COMPLETED', 'Esteira finalizada com 100% de sucesso');
+  persistProjectSnapshot(currentProj.id);
 }
 
 export function updateDroidState(
@@ -891,6 +982,7 @@ export function setProjectThreadId(projectId: string, threadId: string): void {
 }
 
 export function resetProjectThread(projectId: string): void {
+  void syncProjectThreadToDatabase(projectId, undefined);
   projects.update((all) => {
     return all.map((p) => {
       if (p.id === projectId) {
@@ -912,14 +1004,13 @@ export async function deleteProject(projectId: string): Promise<boolean> {
     }
   } catch (err) {
     console.error('[SQLite] Erro ao deletar projeto no backend:', err);
+    return false;
   }
 
   projects.update((all) => {
     const remaining = all.filter((p) => p.id !== projectId);
     if (get(activeProjectId) === projectId) {
-      if (remaining.length > 0) {
-        activeProjectId.set(remaining[0].id);
-      }
+      activeProjectId.set(remaining[0]?.id || '');
     }
     return remaining;
   });
@@ -929,11 +1020,13 @@ export async function deleteProject(projectId: string): Promise<boolean> {
 
 export async function deleteProjectMessage(projectId: string, messageId: string): Promise<boolean> {
   try {
-    await fetch(`/api/v1/projects/${projectId}/messages/${messageId}`, {
+    const res = await fetch(`/api/v1/projects/${projectId}/messages/${messageId}`, {
       method: 'DELETE',
     });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
   } catch (err) {
     console.error('[SQLite] Erro ao deletar mensagem no backend:', err);
+    return false;
   }
 
   projects.update((all) => {
@@ -953,11 +1046,13 @@ export async function deleteProjectMessage(projectId: string, messageId: string)
 
 export async function clearProjectMessages(projectId: string): Promise<boolean> {
   try {
-    await fetch(`/api/v1/projects/${projectId}/messages`, {
+    const res = await fetch(`/api/v1/projects/${projectId}/messages`, {
       method: 'DELETE',
     });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
   } catch (err) {
     console.error('[SQLite] Erro ao limpar mensagens no backend:', err);
+    return false;
   }
 
   projects.update((all) => {

@@ -16,7 +16,7 @@ pub use dispatch::dispatch_handler;
 pub use error::ApiError;
 pub use projects::{
     add_project_message_handler, clear_project_messages_handler, delete_project_handler,
-    delete_project_message_handler, list_projects_handler, save_project_handler,
+    delete_project_message_handler, list_projects_handler, read_project_file_handler, save_project_handler,
     update_project_thread_handler,
 };
 pub use ws::ws_handler;
@@ -45,6 +45,7 @@ pub fn api_routes(state: SharedState, db: Database) -> Router {
             delete(delete_project_message_handler),
         )
         .route("/api/v1/projects/{id}/thread", put(update_project_thread_handler))
+        .route("/api/v1/projects/{id}/files", get(read_project_file_handler))
         .with_state(db);
 
     ws_and_bridge.merge(project_routes)
@@ -59,6 +60,7 @@ mod tests {
     };
     use futures_util::StreamExt;
     use http_body_util::BodyExt;
+    use std::fs;
     use tokio_tungstenite::connect_async;
     use tower::ServiceExt;
 
@@ -168,6 +170,66 @@ mod tests {
 
         let response = app.oneshot(req).await.unwrap();
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_project_file_read_and_traversal_protection() {
+        let root = std::env::temp_dir().join(format!(
+            "grid-metropolis-artifact-test-{}",
+            std::process::id()
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::write(root.join("src/main.rs"), "fn main() { println!(\"ok\"); }\n").unwrap();
+
+        let state = create_shared_state();
+        let db = Database::init(":memory:").unwrap();
+        let app = api_routes(state, db);
+        let project = serde_json::json!({
+            "id": "proj-artifact-test",
+            "name": "Artifact Test",
+            "path": root.to_string_lossy(),
+            "model": "test",
+            "status": "ACTIVE",
+            "accentColor": "#00f0ff",
+            "metrics": { "tokensIn": 0, "tokensOut": 0, "latencyMs": 0, "cpu": "", "mem": "" },
+            "droids": [],
+            "activeDroidId": "test",
+            "messages": [],
+            "pipeline": { "isActive": false, "stage": "IDLE", "currentDroidId": "test", "prompt": "", "progressPercent": 0, "statusText": "" }
+        });
+
+        let save = app.clone().oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/v1/projects")
+                .header("Content-Type", "application/json")
+                .body(Body::from(project.to_string()))
+                .unwrap(),
+        ).await.unwrap();
+        assert_eq!(save.status(), StatusCode::OK);
+
+        let read = app.clone().oneshot(
+            Request::builder()
+                .uri("/api/v1/projects/proj-artifact-test/files?path=src/main.rs")
+                .body(Body::empty())
+                .unwrap(),
+        ).await.unwrap();
+        assert_eq!(read.status(), StatusCode::OK);
+        let payload: serde_json::Value = serde_json::from_slice(
+            &read.into_body().collect().await.unwrap().to_bytes(),
+        ).unwrap();
+        assert_eq!(payload["language"], "rust");
+        assert_eq!(payload["content"], "fn main() { println!(\"ok\"); }\n");
+
+        let traversal = app.oneshot(
+            Request::builder()
+                .uri("/api/v1/projects/proj-artifact-test/files?path=../secret.txt")
+                .body(Body::empty())
+                .unwrap(),
+        ).await.unwrap();
+        assert_eq!(traversal.status(), StatusCode::BAD_REQUEST);
+        let _ = fs::remove_dir_all(&root);
     }
 
     #[tokio::test]

@@ -191,7 +191,7 @@
 </script>
 
 {#if $isDroidForgeOpen}
-  <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 select-none font-mono">
+  <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 select-none font-ui">
     <!-- Card Principal do Droid Forge -->
     <div class="w-full max-w-4xl max-h-[92vh] bg-[#070b14] border-2 border-cyan-500/50 rounded-2xl shadow-[0_0_50px_rgba(0,240,255,0.25)] flex flex-col overflow-hidden">
       <!-- Cabeçalho do Forge -->
@@ -202,14 +202,14 @@
           </div>
           <div>
             <div class="flex items-center gap-2">
-              <h2 class="font-pixel-title text-base sm:text-lg text-cyan-300 font-bold tracking-wider">
+              <h2 class="font-ui text-base sm:text-lg text-cyan-300 font-bold tracking-normal">
                 DROID FORGE & HARNESS ROSTER
               </h2>
-              <span class="text-[9px] px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 font-mono">
+              <span class="text-[12px] px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 font-ui">
                 HARNESS v1.0
               </span>
             </div>
-            <p class="text-xs text-slate-400 font-mono">
+            <p class="text-sm text-slate-400 font-ui">
               Pool global de agentes sintéticos da metrópole (estilo Paperclip). Crie, configure e delegue droids por projeto.
             </p>
           </div>
@@ -231,7 +231,7 @@
           <button
             type="button"
             on:click={() => (activeTab = 'ROSTER')}
-            class="px-4 py-2 rounded-t-lg font-pixel-title text-xs tracking-wider border-t border-x transition-all cursor-pointer {activeTab === 'ROSTER'
+            class="px-4 py-2 rounded-t-lg font-ui text-sm tracking-normal border-t border-x transition-all cursor-pointer {activeTab === 'ROSTER'
               ? 'bg-[#0f172a] border-cyan-500/60 text-cyan-300 shadow-[0_-2px_10px_rgba(0,240,255,0.15)]'
               : 'bg-transparent border-transparent text-slate-400 hover:text-slate-200'}"
           >
@@ -240,7 +240,7 @@
           <button
             type="button"
             on:click={handleOpenCreate}
-            class="px-4 py-2 rounded-t-lg font-pixel-title text-xs tracking-wider border-t border-x transition-all cursor-pointer {activeTab === 'FORGE'
+            class="px-4 py-2 rounded-t-lg font-ui text-sm tracking-normal border-t border-x transition-all cursor-pointer {activeTab === 'FORGE'
               ? 'bg-[#0f172a] border-cyan-500/60 text-cyan-300 shadow-[0_-2px_10px_rgba(0,240,255,0.15)]'
               : 'bg-transparent border-transparent text-slate-400 hover:text-slate-200'}"
           >
@@ -252,7 +252,7 @@
           <button
             type="button"
             on:click={handleOpenCreate}
-            class="px-3 py-1.5 rounded-lg bg-cyan-950/70 border border-cyan-500/60 text-cyan-300 hover:bg-cyan-500 hover:text-black font-pixel-title text-xs flex items-center gap-1.5 transition-all cursor-pointer mb-2"
+            class="px-3 py-1.5 rounded-lg bg-cyan-950/70 border border-cyan-500/60 text-cyan-300 hover:bg-cyan-500 hover:text-black font-ui text-sm flex items-center gap-1.5 transition-all cursor-pointer mb-2"
           >
             <Plus size={14} />
             <span>NOVO DROID</span>
@@ -283,27 +283,27 @@
                         {#if droid.avatarType === 'spark'}
                           <img src="/assets/spark/idle_0.png" alt={droid.name} class="w-9 h-9 object-contain pixelated" />
                         {:else if droid.avatarType === 'hacker'}
-                          <span class="text-sm font-pixel-title font-bold" style="color: {droid.accentColor}">&lt;/&gt;</span>
+                          <span class="text-sm font-ui font-bold" style="color: {droid.accentColor}">&lt;/&gt;</span>
                         {:else if droid.avatarType === 'scientist'}
-                          <span class="text-sm font-pixel-title font-bold" style="color: {droid.accentColor}">[EXP]</span>
+                          <span class="text-sm font-ui font-bold" style="color: {droid.accentColor}">[EXP]</span>
                         {:else}
-                          <span class="text-sm font-pixel-title font-bold" style="color: {droid.accentColor}">🛡️</span>
+                          <span class="text-sm font-ui font-bold" style="color: {droid.accentColor}">🛡️</span>
                         {/if}
                       </div>
 
                       <div>
                         <div class="flex items-center gap-1.5">
-                          <h3 class="font-pixel-title text-sm text-slate-100 font-bold">
+                          <h3 class="font-ui text-sm text-slate-100 font-bold">
                             {droid.name}
                           </h3>
                           {#if droid.isCustom}
-                            <span class="text-[8px] px-1 rounded bg-fuchsia-950/80 text-fuchsia-400 border border-fuchsia-500/40">
+                            <span class="text-[12px] px-1 rounded bg-fuchsia-950/80 text-fuchsia-400 border border-fuchsia-500/40">
                               CUSTOM
                             </span>
                           {/if}
                         </div>
                         <span
-                          class="text-[9px] font-mono px-1.5 py-0.2 rounded border uppercase tracking-wider inline-block mt-0.5"
+                          class="text-[12px] font-ui px-1.5 py-0.2 rounded border uppercase tracking-normal inline-block mt-0.5"
                           style="color: {droid.accentColor}; background: {droid.accentColor}15; border-color: {droid.accentColor}40"
                         >
                           {droid.planBadge}
@@ -349,30 +349,30 @@
                   </div>
 
                   <!-- Modelo e Papel -->
-                  <div class="flex items-center justify-between text-[10px] text-slate-400 mb-2 pb-2 border-b border-slate-800">
+                  <div class="flex items-center justify-between text-[12px] text-slate-400 mb-2 pb-2 border-b border-slate-800">
                     <span class="flex items-center gap-1">
                       <Cpu size={11} class="text-slate-500" />
                       <span>{droid.model}</span>
                     </span>
-                    <span class="text-cyan-400/90 font-mono font-bold">
+                    <span class="text-cyan-400/90 font-ui font-bold">
                       {droid.role}
                     </span>
                   </div>
 
                   <!-- System Prompt / Persona -->
-                  <p class="text-[11px] text-slate-300 line-clamp-2 italic mb-3 font-mono leading-snug">
+                  <p class="text-[12px] text-slate-300 line-clamp-2 italic mb-3 font-ui leading-snug">
                     "{droid.systemPrompt}"
                   </p>
 
                   <!-- Skills Tags -->
                   <div class="flex flex-wrap gap-1 mb-3">
                     {#each droid.skills.slice(0, 3) as skill}
-                      <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-mono">
+                      <span class="text-[12px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-ui">
                         #{skill}
                       </span>
                     {/each}
                     {#if droid.skills.length > 3}
-                      <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-500 font-mono">
+                      <span class="text-[12px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-500 font-ui">
                         +{droid.skills.length - 3}
                       </span>
                     {/if}
@@ -380,7 +380,7 @@
                 </div>
 
                 <!-- Rodapé do Card: Workspaces onde opera -->
-                <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[9px] text-slate-500 font-mono">
+                <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between text-[12px] text-slate-500 font-ui">
                   <span class="flex items-center gap-1">
                     <FolderGit2 size={10} class="text-slate-400" />
                     <span>{assigned.length > 0 ? `${assigned.length} workspace(s)` : 'Banco de Reserva'}</span>
@@ -404,7 +404,7 @@
               <!-- Nome e Modelo -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label for="form-name" class="text-xs text-slate-300 block mb-1 font-bold">
+                  <label for="form-name" class="text-sm text-slate-300 block mb-1 font-bold">
                     Nome do Droid:
                   </label>
                   <input
@@ -412,18 +412,18 @@
                     type="text"
                     bind:value={formName}
                     placeholder="Ex: Byte-Runner, Sentinel-X, Cipher-9..."
-                    class="w-full bg-[#050810] border border-[#1e2a40] focus:border-cyan-400 text-slate-100 text-xs px-3 py-2 rounded-lg outline-none"
+                    class="w-full bg-[#050810] border border-[#1e2a40] focus:border-cyan-400 text-slate-100 text-sm px-3 py-2 rounded-lg outline-none"
                   />
                 </div>
 
                 <div>
-                  <label for="form-model" class="text-xs text-slate-300 block mb-1 font-bold">
+                  <label for="form-model" class="text-sm text-slate-300 block mb-1 font-bold">
                     Motor LLM de Execução:
                   </label>
                   <select
                     id="form-model"
                     bind:value={formModel}
-                    class="w-full bg-[#050810] border border-[#1e2a40] focus:border-cyan-400 text-slate-100 text-xs px-3 py-2 rounded-lg outline-none cursor-pointer"
+                    class="w-full bg-[#050810] border border-[#1e2a40] focus:border-cyan-400 text-slate-100 text-sm px-3 py-2 rounded-lg outline-none cursor-pointer"
                   >
                     {#each LLM_MODELS as m}
                       <option value={m}>{m}</option>
@@ -435,14 +435,14 @@
               <!-- Papel e Especialidade -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label for="form-role" class="text-xs text-slate-300 block mb-1 font-bold">
+                  <label for="form-role" class="text-sm text-slate-300 block mb-1 font-bold">
                     Papel Corporativo (Harness Role):
                   </label>
                   <select
                     id="form-role"
                     bind:value={formRole}
                     on:change={() => handleRoleChange(formRole)}
-                    class="w-full bg-[#050810] border border-[#1e2a40] focus:border-cyan-400 text-slate-100 text-xs px-3 py-2 rounded-lg outline-none cursor-pointer"
+                    class="w-full bg-[#050810] border border-[#1e2a40] focus:border-cyan-400 text-slate-100 text-sm px-3 py-2 rounded-lg outline-none cursor-pointer"
                   >
                     {#each ROLE_OPTIONS as opt}
                       <option value={opt.role}>{opt.icon} {opt.label}</option>
@@ -451,7 +451,7 @@
                 </div>
 
                 <div>
-                  <label for="form-badge" class="text-xs text-slate-300 block mb-1 font-bold">
+                  <label for="form-badge" class="text-sm text-slate-300 block mb-1 font-bold">
                     Especialidade / Título da Badge:
                   </label>
                   <input
@@ -459,7 +459,7 @@
                     type="text"
                     bind:value={formBadge}
                     placeholder="Ex: Rust & Kernel Specialist, UI Architect..."
-                    class="w-full bg-[#050810] border border-[#1e2a40] focus:border-cyan-400 text-slate-100 text-xs px-3 py-2 rounded-lg outline-none"
+                    class="w-full bg-[#050810] border border-[#1e2a40] focus:border-cyan-400 text-slate-100 text-sm px-3 py-2 rounded-lg outline-none"
                   />
                 </div>
               </div>
@@ -467,7 +467,7 @@
               <!-- Tipo de Avatar & Cor de Acento -->
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <span class="text-xs text-slate-300 block mb-1 font-bold">
+                  <span class="text-sm text-slate-300 block mb-1 font-bold">
                     Skin / Estilo do Avatar:
                   </span>
                   <div class="grid grid-cols-4 gap-2">
@@ -479,7 +479,7 @@
                         : 'bg-[#050810] border-[#1e2a40] text-slate-400'}"
                     >
                       <div class="text-base mb-1">🤖</div>
-                      <div class="text-[9px] font-pixel-title">SPARK</div>
+                      <div class="text-[12px] font-ui">SPARK</div>
                     </button>
 
                     <button
@@ -490,7 +490,7 @@
                         : 'bg-[#050810] border-[#1e2a40] text-slate-400'}"
                     >
                       <div class="text-base mb-1">💻</div>
-                      <div class="text-[9px] font-pixel-title">HACKER</div>
+                      <div class="text-[12px] font-ui">HACKER</div>
                     </button>
 
                     <button
@@ -501,7 +501,7 @@
                         : 'bg-[#050810] border-[#1e2a40] text-slate-400'}"
                     >
                       <div class="text-base mb-1">🔬</div>
-                      <div class="text-[9px] font-pixel-title">CIENTISTA</div>
+                      <div class="text-[12px] font-ui">CIENTISTA</div>
                     </button>
 
                     <button
@@ -512,13 +512,13 @@
                         : 'bg-[#050810] border-[#1e2a40] text-slate-400'}"
                     >
                       <div class="text-base mb-1">🛡️</div>
-                      <div class="text-[9px] font-pixel-title">SENTINELA</div>
+                      <div class="text-[12px] font-ui">SENTINELA</div>
                     </button>
                   </div>
                 </div>
 
                 <div>
-                  <span class="text-xs text-slate-300 block mb-1 font-bold">
+                  <span class="text-sm text-slate-300 block mb-1 font-bold">
                     Cor Néon de Acento:
                   </span>
                   <div class="flex items-center gap-2 mt-1">
@@ -537,7 +537,7 @@
 
               <!-- Skills (separadas por vírgula) -->
               <div>
-                <label for="form-skills" class="text-xs text-slate-300 block mb-1 font-bold">
+                <label for="form-skills" class="text-sm text-slate-300 block mb-1 font-bold">
                   Competências / Skills Técnicas (separadas por vírgula):
                 </label>
                 <input
@@ -545,13 +545,13 @@
                   type="text"
                   bind:value={formSkillsStr}
                   placeholder="Ex: Rust, WebSockets, Memory Safety, SQLite..."
-                  class="w-full bg-[#050810] border border-[#1e2a40] focus:border-cyan-400 text-slate-100 text-xs px-3 py-2 rounded-lg outline-none font-mono"
+                  class="w-full bg-[#050810] border border-[#1e2a40] focus:border-cyan-400 text-slate-100 text-sm px-3 py-2 rounded-lg outline-none font-ui"
                 />
               </div>
 
               <!-- System Prompt / Persona -->
               <div>
-                <label for="form-prompt" class="text-xs text-slate-300 block mb-1 font-bold">
+                <label for="form-prompt" class="text-sm text-slate-300 block mb-1 font-bold">
                   Persona & Diretrizes Operacionais (System Prompt):
                 </label>
                 <textarea
@@ -559,14 +559,14 @@
                   bind:value={formPrompt}
                   rows="3"
                   placeholder="Defina o comportamento, tom de voz, regras de validação e foco de atuação deste agente..."
-                  class="w-full bg-[#050810] border border-[#1e2a40] focus:border-cyan-400 text-slate-100 text-xs px-3 py-2 rounded-lg outline-none font-mono leading-relaxed resize-none"
+                  class="w-full bg-[#050810] border border-[#1e2a40] focus:border-cyan-400 text-slate-100 text-sm px-3 py-2 rounded-lg outline-none font-ui leading-relaxed resize-none"
                 ></textarea>
               </div>
             </div>
 
             <!-- Coluna 3: Cartão Holográfico de Pré-Visualização em Tempo Real -->
             <div class="flex flex-col">
-              <span class="text-xs text-slate-400 font-bold mb-2">
+              <span class="text-sm text-slate-400 font-bold mb-2">
                 HOLOGRAPHIC PREVIEW:
               </span>
 
@@ -589,20 +589,20 @@
                       {#if formAvatar === 'spark'}
                         <img src="/assets/spark/idle_0.png" alt="Preview" class="w-12 h-12 object-contain pixelated" />
                       {:else if formAvatar === 'hacker'}
-                        <span class="text-lg font-pixel-title font-bold" style="color: {formAccent}">&lt;/&gt;</span>
+                        <span class="text-lg font-ui font-bold" style="color: {formAccent}">&lt;/&gt;</span>
                       {:else if formAvatar === 'scientist'}
-                        <span class="text-lg font-pixel-title font-bold" style="color: {formAccent}">[EXP]</span>
+                        <span class="text-lg font-ui font-bold" style="color: {formAccent}">[EXP]</span>
                       {:else}
-                        <span class="text-lg font-pixel-title font-bold" style="color: {formAccent}">🛡️</span>
+                        <span class="text-lg font-ui font-bold" style="color: {formAccent}">🛡️</span>
                       {/if}
                     </div>
 
                     <div>
-                      <h4 class="font-pixel-title text-base text-white font-bold tracking-wider">
+                      <h4 class="font-ui text-base text-white font-bold tracking-normal">
                         {formName || 'NOME DO DROID'}
                       </h4>
                       <span
-                        class="text-[10px] font-mono px-2 py-0.5 rounded border uppercase tracking-wider inline-block mt-1 font-bold"
+                        class="text-[12px] font-ui px-2 py-0.5 rounded border uppercase tracking-normal inline-block mt-1 font-bold"
                         style="color: {formAccent}; background: {formAccent}15; border-color: {formAccent}40"
                       >
                         {formBadge || 'ESPECIALIDADE'}
@@ -610,7 +610,7 @@
                     </div>
                   </div>
 
-                  <div class="space-y-2 text-xs font-mono">
+                  <div class="space-y-2 text-sm font-ui">
                     <div class="flex justify-between text-slate-400 border-b border-slate-800 pb-1">
                       <span>Papel:</span>
                       <span class="text-slate-100 font-bold">{formRole}</span>
@@ -626,10 +626,10 @@
                   </div>
 
                   <div class="mt-4">
-                    <span class="text-[10px] text-slate-500 font-mono uppercase block mb-1">
+                    <span class="text-[12px] text-slate-500 font-ui uppercase block mb-1">
                       Diretrizes Ativas:
                     </span>
-                    <p class="text-[11px] text-slate-300 font-mono italic bg-black/40 p-2.5 rounded-lg border border-slate-800/80 line-clamp-3">
+                    <p class="text-[12px] text-slate-300 font-ui italic bg-black/40 p-2.5 rounded-lg border border-slate-800/80 line-clamp-3">
                       "{formPrompt || 'Aguardando preenchimento das diretrizes...'}"
                     </p>
                   </div>
@@ -641,7 +641,7 @@
                     type="button"
                     on:click={handleSave}
                     disabled={!formName.trim()}
-                    class="w-full py-2.5 rounded-lg font-pixel-title text-xs tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer {formName.trim()
+                    class="w-full py-2.5 rounded-lg font-ui text-sm tracking-normal transition-all flex items-center justify-center gap-2 cursor-pointer {formName.trim()
                       ? 'bg-cyan-500 text-black font-bold hover:bg-cyan-400 shadow-[0_0_15px_rgba(0,240,255,0.4)]'
                       : 'bg-slate-800 text-slate-500 cursor-not-allowed'}"
                   >
@@ -652,7 +652,7 @@
                   <button
                     type="button"
                     on:click={() => (activeTab = 'ROSTER')}
-                    class="w-full py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 text-xs transition cursor-pointer"
+                    class="w-full py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 text-sm transition cursor-pointer"
                   >
                     Cancelar
                   </button>

@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
-use rusqlite::{params, Connection};
+use rusqlite::{params, Connection, OptionalExtension};
 use tracing::{error, info};
 
 use crate::db::models::{ChatMessage, DroidInfo, PipelineState, ProjectMetrics, ProjectTerminal};
@@ -345,6 +345,17 @@ impl Database {
         }
 
         Ok(projects)
+    }
+
+    pub fn project_root(&self, project_id: &str) -> Result<Option<String>, String> {
+        let conn = self.conn.lock().map_err(|e| e.to_string())?;
+        conn.query_row(
+            "SELECT path FROM projects WHERE id = ?1",
+            params![project_id],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()
+        .map_err(|e| e.to_string())
     }
 
     pub fn save_project(&self, proj: &ProjectTerminal) -> Result<(), String> {

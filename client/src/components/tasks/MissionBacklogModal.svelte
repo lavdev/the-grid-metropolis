@@ -44,7 +44,7 @@
 </script>
 
 {#if $isBacklogOpen}
-  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 font-mono select-none">
+  <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 font-ui select-none">
     <div class="w-full max-w-4xl bg-slate-950 border border-cyan-500/40 rounded-2xl shadow-[0_0_50px_rgba(0,0,0,0.9)] flex flex-col max-h-[88vh] overflow-hidden">
       <!-- Header do Modal -->
       <div class="px-6 py-4 border-b border-slate-800 bg-slate-900/90 flex items-center justify-between">
@@ -53,20 +53,20 @@
             <span class="text-sm font-black">📋</span>
           </div>
           <div>
-            <div class="text-sm font-black text-slate-100 uppercase tracking-widest flex items-center gap-2">
+            <div class="text-sm font-black text-slate-100 uppercase tracking-wide flex items-center gap-2">
               PAINEL DE MISSÕES & BACKLOG
-              <span class="text-[10px] px-2 py-0.5 rounded font-mono bg-cyan-950 text-cyan-300 border border-cyan-500/30">
+              <span class="text-[12px] px-2 py-0.5 rounded font-ui bg-cyan-950 text-cyan-300 border border-cyan-500/30">
                 {$missionBacklog.length} TAREFAS
               </span>
             </div>
-            <div class="text-[11px] text-slate-400">GESTÃO DE DEMANDAS SINCRONIZADA COM OS AGENTES</div>
+            <div class="text-[12px] text-slate-400">GESTÃO DE DEMANDAS SINCRONIZADA COM OS AGENTES</div>
           </div>
         </div>
 
         <div class="flex items-center gap-2">
           <button
             on:click={() => (isCreating = !isCreating)}
-            class="px-3 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-200 font-bold text-xs flex items-center gap-1.5 transition"
+            class="px-3 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-200 font-bold text-sm flex items-center gap-1.5 transition"
           >
             <Plus class="w-3.5 h-3.5" />
             <span>{isCreating ? 'Cancelar' : 'Nova Missão'}</span>
@@ -80,29 +80,29 @@
 
       <!-- Formulário de Criação Rápida de Missão (Inline) -->
       {#if isCreating}
-        <div class="p-5 bg-slate-900/95 border-b border-slate-800 space-y-3 text-xs">
-          <div class="text-xs font-bold text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
+        <div class="p-5 bg-slate-900/95 border-b border-slate-800 space-y-3 text-sm">
+          <div class="text-sm font-bold text-cyan-300 uppercase tracking-normal flex items-center gap-1.5">
             <Plus class="w-3.5 h-3.5" /> Despachar Nova Demanda para o Cluster
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div class="sm:col-span-2">
-              <label for="mission-prompt" class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Instrução / Prompt</label>
+              <label for="mission-prompt" class="block text-[12px] text-slate-400 uppercase font-bold mb-1">Instrução / Prompt</label>
               <input
                 id="mission-prompt"
                 type="text"
                 bind:value={newPrompt}
                 placeholder="Ex: Otimizar o algoritmo de pathfinding A* no módulo client"
-                class="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-100 text-xs focus:border-cyan-400 focus:outline-none"
+                class="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-100 text-sm focus:border-cyan-400 focus:outline-none"
               />
             </div>
 
             <div>
-              <label for="mission-agent" class="block text-[10px] text-slate-400 uppercase font-bold mb-1">Agente Responsável</label>
+              <label for="mission-agent" class="block text-[12px] text-slate-400 uppercase font-bold mb-1">Agente Responsável</label>
               <select
                 id="mission-agent"
                 bind:value={newAgentId}
-                class="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-100 text-xs focus:border-cyan-400 focus:outline-none"
+                class="w-full p-2.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-100 text-sm focus:border-cyan-400 focus:outline-none"
               >
                 {#each ROSTER_AGENTS as agent}
                   <option value={agent.id}>@{agent.name} ({agent.model.split(' ')[0]})</option>
@@ -113,12 +113,12 @@
 
           <div class="flex items-center justify-between pt-1">
             <div class="flex items-center gap-2">
-              <span class="text-[10px] text-slate-400 uppercase font-bold">Prioridade:</span>
+              <span class="text-[12px] text-slate-400 uppercase font-bold">Prioridade:</span>
               {#each ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as p}
                 <button
                   type="button"
                   on:click={() => (newPriority = p as any)}
-                  class="px-2 py-0.5 rounded text-[10px] font-bold border transition
+                  class="px-2 py-0.5 rounded text-[12px] font-bold border transition
                   {newPriority === p ? priorityColors[p as keyof typeof priorityColors] : 'bg-slate-950 border-slate-800 text-slate-500'}"
                 >
                   {p}
@@ -128,7 +128,7 @@
 
             <button
               on:click={handleCreateMission}
-              class="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider transition shadow-[0_0_12px_rgba(6,182,212,0.5)] cursor-pointer"
+              class="px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black text-sm uppercase tracking-normal transition shadow-[0_0_12px_rgba(6,182,212,0.5)] cursor-pointer"
             >
               Despachar Missão
             </button>
@@ -137,7 +137,7 @@
       {/if}
 
       <!-- Barra de Filtros / Tabs -->
-      <div class="px-6 py-2.5 bg-slate-950 border-b border-slate-800/80 flex items-center justify-between text-xs">
+      <div class="px-6 py-2.5 bg-slate-950 border-b border-slate-800/80 flex items-center justify-between text-sm">
         <div class="flex items-center gap-2">
           <button
             on:click={() => (currentTab = 'ALL')}
@@ -167,7 +167,7 @@
       </div>
 
       <!-- Lista de Missões (Cards no estilo Linear / Notion) -->
-      <div class="p-6 overflow-y-auto space-y-3 text-xs flex-1">
+      <div class="p-6 overflow-y-auto space-y-3 text-sm flex-1">
         {#if filteredMissions.length === 0}
           <div class="flex flex-col items-center justify-center py-16 text-slate-500 space-y-2">
             <span class="text-2xl">⚡</span>
@@ -179,12 +179,12 @@
               <!-- Linha Superior: ID, Status, Prioridade e Agente -->
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/60 pb-2.5">
                 <div class="flex items-center gap-2">
-                  <span class="text-[11px] font-mono font-bold text-slate-400 group-hover:text-cyan-300">
+                  <span class="text-[12px] font-ui font-bold text-slate-400 group-hover:text-cyan-300">
                     {mission.id}
                   </span>
 
                   <!-- Badge de Status -->
-                  <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase flex items-center gap-1
+                  <span class="px-2 py-0.5 rounded text-[12px] font-bold uppercase flex items-center gap-1
                     {mission.status === 'COMPLETED' ? 'bg-emerald-950 text-emerald-300 border border-emerald-500/40' :
                      mission.status === 'IN_PROGRESS' ? 'bg-amber-950 text-amber-300 border border-amber-500/40 animate-pulse' :
                      'bg-slate-800 text-slate-300'}">
@@ -198,13 +198,13 @@
                   </span>
 
                   <!-- Prioridade -->
-                  <span class="px-2 py-0.5 rounded text-[9px] font-bold uppercase border {priorityColors[mission.priority]}">
+                  <span class="px-2 py-0.5 rounded text-[12px] font-bold uppercase border {priorityColors[mission.priority]}">
                     {mission.priority}
                   </span>
                 </div>
 
                 <!-- Agente e Timestamp -->
-                <div class="flex items-center gap-3 text-[11px] text-slate-400 font-mono">
+                <div class="flex items-center gap-3 text-[12px] text-slate-400 font-ui">
                   <span class="flex items-center gap-1 text-cyan-400 font-bold">
                     <Cpu class="w-3.5 h-3.5" /> @{mission.agentName}
                   </span>
@@ -222,14 +222,14 @@
               </div>
 
               <!-- Descrição / Prompt da Missão -->
-              <div class="text-slate-200 font-sans text-xs leading-relaxed font-normal">
+              <div class="text-slate-200 font-sans text-sm leading-relaxed font-normal">
                 {mission.prompt}
               </div>
 
               <!-- Rodapé da Missão: Arquivos e Tokens -->
-              <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-slate-400">
+              <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-[12px] text-slate-400">
                 {#if mission.files && mission.files.length > 0}
-                  <div class="flex items-center gap-1.5 font-mono">
+                  <div class="flex items-center gap-1.5 font-ui">
                     <FileCode class="w-3.5 h-3.5 text-emerald-400" />
                     <span>Arquivos:</span>
                     <span class="text-emerald-300">{mission.files.join(', ')}</span>
@@ -237,7 +237,7 @@
                 {/if}
 
                 {#if mission.tokensConsumed > 0}
-                  <div class="text-purple-400 font-mono font-bold text-[10px]">
+                  <div class="text-purple-400 font-ui font-bold text-[12px]">
                     {mission.tokensConsumed.toLocaleString()} tokens consumidos
                   </div>
                 {/if}
@@ -249,7 +249,7 @@
 
       <!-- Rodapé do Modal -->
       <div class="px-6 py-3 border-t border-slate-800 bg-slate-900/90 flex justify-end">
-        <button on:click={close} class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold transition text-xs">
+        <button on:click={close} class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold transition text-sm">
           Fechar Painel
         </button>
       </div>

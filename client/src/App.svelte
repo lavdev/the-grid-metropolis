@@ -38,8 +38,8 @@
   <ProjectSidebar />
 
   <!-- 2. Área Central: Cyber-Deck Terminal CRT com Fundo Temático The Grid Metropolis -->
-  <main class="flex-1 h-full overflow-hidden flex flex-col relative bg-[#04060c]">
-    <CrtTerminal />
+  <main class="flex-1 min-w-0 h-full overflow-hidden flex flex-col relative bg-[#04060c]">
+    <CrtTerminal {connectionStatus} />
   </main>
 
   <!-- Modais Compartilhados (Painel de Missões & Backlog Linear & Configuração de IA) -->

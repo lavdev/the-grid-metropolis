@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Consolas', 'Liberation Mono', monospace;
+  --color-slate-400: #a4b2c8;
+  --color-slate-500: #8c9bb2;
+  --color-slate-600: #7889a3;
+}
+
 :root {
   --neon-cyan: #00f0ff;
   --neon-purple: #9d00ff;
@@ -7,6 +15,12 @@
   --neon-green: #39ff14;
   --panel-bg: rgba(10, 12, 20, 0.88);
   --panel-border: rgba(0, 240, 255, 0.25);
+  --surface-base: #080d16;
+  --surface-raised: #101a29;
+  --surface-hover: #162337;
+  --border-subtle: #243247;
+  --text-primary: #edf3fc;
+  --text-secondary: #a4b2c8;
 }
 
 html, body {
@@ -18,7 +32,72 @@ html, body {
   background-color: #050608;
   color: #e2e8f0;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-  user-select: none;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Shared interface typography. Pixel fonts belong to the city and its insignia. */
+.font-ui {
+  font-family: var(--font-sans);
+  letter-spacing: normal;
+}
+
+.font-code {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: normal;
+}
+
+.font-brand {
+  font-family: 'Silkscreen', monospace;
+  letter-spacing: 0.04em;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+}
+
+button {
+  touch-action: manipulation;
+}
+
+:where(button, input, select, textarea, summary, a):focus-visible {
+  outline: 2px solid #67e8f9;
+  outline-offset: 3px;
+}
+
+input::placeholder, textarea::placeholder {
+  color: #8c9bb2;
+  opacity: 1;
+}
+
+::selection {
+  color: #f0fdff;
+  background: #155e75;
+}
+
+.readable-text, pre, code, input, textarea {
+  user-select: text;
+}
+
+.readable-text {
+  overflow-wrap: anywhere;
+}
+
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #344963 transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Efeito de scanline sutil para visual retrô-futurista */

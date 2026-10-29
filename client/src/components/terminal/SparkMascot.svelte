@@ -5,6 +5,7 @@
   export let label: string = 'SPARK-01';
   export let interactive: boolean = true;
   export let wander: boolean = true;
+  export let docked: boolean = false;
   export let inactivityTimeoutMs: number = 5 * 60 * 1000; // 5 minutos padrão
 
   const dispatch = createEventDispatcher();
@@ -275,8 +276,9 @@
 <!-- svelte-ignore a11y_click_events_have_key_events -->
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
+  class:spark-docked={docked}
   class="absolute flex items-end gap-2 select-none {interactive ? 'cursor-pointer' : ''} group z-40 pointer-events-auto"
-  style="left: {currentXPercent}%; top: {currentYPercent}%; transition: left {moveDurationSec}s cubic-bezier(0.35, 0, 0.25, 1), top {moveDurationSec}s cubic-bezier(0.35, 0, 0.25, 1);"
+  style="left: {docked ? `min(${currentXPercent}%, calc(100% - 260px))` : `${currentXPercent}%`}; top: {docked ? '0px' : `${currentYPercent}%`}; transition: left {moveDurationSec}s cubic-bezier(0.35, 0, 0.25, 1), top {moveDurationSec}s cubic-bezier(0.35, 0, 0.25, 1);"
   on:mouseenter={() => (isHovered = true)}
   on:mouseleave={() => (isHovered = false)}
   on:click={handleClick}
@@ -285,18 +287,18 @@
   <!-- Balão de Fala com Piada Geek (Posicionado BEM ACIMA da cabeça, sem cobrir o robô) -->
   {#if currentJoke && activeState === 'idle' && !isSleeping}
     <div
-      class="absolute bottom-[125px] left-0 sm:-left-6 z-50 min-w-[240px] max-w-[320px] sm:max-w-[360px] p-3 rounded-2xl bg-[#070e1b]/98 border-2 border-cyan-400 text-cyan-200 font-pixel-terminal text-base shadow-[0_0_25px_rgba(0,240,255,0.45)] animate-in fade-in slide-in-from-bottom-2 duration-300 pointer-events-auto"
+      class="absolute bottom-[125px] left-0 sm:-left-6 z-50 min-w-[240px] max-w-[320px] sm:max-w-[360px] p-3 rounded-2xl bg-[#070e1b]/98 border-2 border-cyan-400 text-cyan-200 font-code text-base shadow-[0_0_25px_rgba(0,240,255,0.45)] animate-in fade-in slide-in-from-bottom-2 duration-300 pointer-events-auto"
     >
       <div class="relative">
-        <div class="flex items-center justify-between text-[9px] font-pixel-title text-cyan-400 font-bold uppercase tracking-wider mb-1">
+        <div class="flex items-center justify-between text-[12px] font-ui text-cyan-400 font-bold uppercase tracking-normal mb-1">
           <span class="flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
             <span>💬 {label} TRANSMITINDO:</span>
           </span>
-          <span class="text-cyan-500/80 font-mono text-[8px]">8.5s</span>
+          <span class="text-cyan-500/80 font-mono text-[12px]">8.5s</span>
         </div>
 
-        <div class="leading-snug text-white font-mono text-xs sm:text-[13px] tracking-wide py-0.5">
+        <div class="leading-snug text-white font-mono text-sm sm:text-[13px] tracking-wide py-0.5">
           "{currentJoke}"
         </div>
 
@@ -311,14 +313,14 @@
   {#if isSleeping}
     <div class="absolute -top-12 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center pointer-events-none">
       <!-- Partículas Zzz Subindo -->
-      <div class="relative h-10 w-16 overflow-visible font-pixel-title text-fuchsia-400 font-black">
-        <span class="absolute text-xs animate-zzz-1">Z</span>
+      <div class="relative h-10 w-16 overflow-visible font-ui text-fuchsia-400 font-black">
+        <span class="absolute text-sm animate-zzz-1">Z</span>
         <span class="absolute text-sm animate-zzz-2">z</span>
         <span class="absolute text-base animate-zzz-3">z</span>
       </div>
 
       <!-- Badge de Bateria Recarregando -->
-      <div class="px-2 py-0.5 rounded-full bg-[#160e29]/90 border border-fuchsia-500/60 text-[9px] text-fuchsia-300 font-mono font-bold flex items-center gap-1 shadow-[0_0_12px_rgba(217,70,239,0.4)] whitespace-nowrap">
+      <div class="px-2 py-0.5 rounded-full bg-[#160e29]/90 border border-fuchsia-500/60 text-[12px] text-fuchsia-300 font-mono font-bold flex items-center gap-1 shadow-[0_0_12px_rgba(217,70,239,0.4)] whitespace-nowrap">
         <span>🔋 RECARGA:</span>
         <span class="text-cyan-300 font-bold">{batteryLevel}%</span>
         <span class="animate-pulse text-amber-300">⚡</span>
@@ -345,19 +347,19 @@
 
     <!-- Indicador de estado flutuante -->
     {#if activeState === 'thinking'}
-      <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-cyan-950/90 border border-cyan-400 text-[10px] text-cyan-300 font-mono font-bold animate-pulse shadow-[0_0_10px_#06b6d4] whitespace-nowrap">
+      <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-cyan-950/90 border border-cyan-400 text-[12px] text-cyan-300 font-mono font-bold animate-pulse shadow-[0_0_10px_#06b6d4] whitespace-nowrap">
         ⚙️ PENSANDO...
       </div>
     {:else if activeState === 'speaking'}
-      <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-fuchsia-950/90 border border-fuchsia-400 text-[10px] text-fuchsia-300 font-mono font-bold animate-pulse shadow-[0_0_10px_#d946ef] whitespace-nowrap">
+      <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-fuchsia-950/90 border border-fuchsia-400 text-[12px] text-fuchsia-300 font-mono font-bold animate-pulse shadow-[0_0_10px_#d946ef] whitespace-nowrap">
         🔊 TRANSMITINDO...
       </div>
     {:else if activeState === 'celebrate'}
-      <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-emerald-950/90 border border-emerald-400 text-[10px] text-emerald-300 font-mono font-bold animate-bounce shadow-[0_0_10px_#10b981] whitespace-nowrap">
+      <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-emerald-950/90 border border-emerald-400 text-[12px] text-emerald-300 font-mono font-bold animate-bounce shadow-[0_0_10px_#10b981] whitespace-nowrap">
         ✨ 100% SUCESSO!
       </div>
     {:else if isFlying && !isSleeping}
-      <div class="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded bg-slate-900/80 border border-cyan-500/30 text-[8px] text-cyan-400/90 font-mono tracking-wider opacity-80 whitespace-nowrap">
+      <div class="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.2 rounded bg-slate-900/80 border border-cyan-500/30 text-[12px] text-cyan-400/90 font-mono tracking-normal opacity-80 whitespace-nowrap">
         VOANDO...
       </div>
     {/if}
@@ -365,11 +367,11 @@
 
   <!-- Tag de Nome / Status do Robô (Mantém orientação legível) -->
   <div class="mb-4 flex flex-col shrink-0">
-    <div class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-900/90 border border-cyan-500/40 text-cyan-300 font-mono font-black text-xs tracking-wider shadow-[0_0_10px_rgba(6,182,212,0.4)]">
+    <div class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-slate-900/90 border border-cyan-500/40 text-cyan-300 font-mono font-black text-sm tracking-normal shadow-[0_0_10px_rgba(6,182,212,0.4)]">
       <span class="w-1.5 h-1.5 rounded-full {isSleeping ? 'bg-fuchsia-400 animate-pulse' : isFlying ? 'bg-cyan-400 animate-pulse' : 'bg-emerald-400 animate-ping'}"></span>
       <span>{label}</span>
     </div>
-    <span class="text-[9px] text-slate-400 font-mono mt-0.5 pl-0.5">
+    <span class="text-[12px] text-slate-400 font-mono mt-0.5 pl-0.5">
       {#if isSleeping}
         STANDBY // SONO
       {:else if activeState === 'idle'}
@@ -386,6 +388,17 @@
 </div>
 
 <style>
+  .spark-docked .spark-sprite {
+    width: 70px;
+    height: 77px;
+    background-size: 420px 77px;
+    animation-name: spark-docked-cycle;
+  }
+  @keyframes spark-docked-cycle {
+    from { background-position: 0 0; }
+    to { background-position: -420px 0; }
+  }
+
   /* Flutuação suave em repouso */
   .spark-float {
     animation: spark-hover 3s ease-in-out infinite;

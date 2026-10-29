@@ -48,7 +48,7 @@
   }
 
   const modelOptions = [
-    { id: 'default', label: 'Default', subtitle: 'Recommended set of models', isDefault: true },
+    { id: 'default', label: 'Default', subtitle: 'Seleção padrão de modelos', isDefault: true },
     { id: 'gpt-6.1-sol', label: 'GPT-6.1 Sol' },
     { id: 'gpt-6-astra', label: 'GPT-6 Astra' },
     { id: 'gpt-6.1-terra', label: 'GPT-6.1 Terra' },
@@ -67,8 +67,8 @@
     style="filter: drop-shadow(0 0 16px rgba(0,240,255,0.15));"
   >
     <!-- Título do Menu -->
-    <div class="px-3 pt-2 pb-1.5 text-[11px] font-medium text-slate-400 tracking-normal">
-      Select model
+    <div class="px-3 pt-2 pb-1.5 text-[12px] font-medium text-slate-400 tracking-normal">
+      Selecionar modelo
     </div>
 
     <!-- Opção Padrão (Default) -->
@@ -78,8 +78,8 @@
       class="w-full text-left px-3 py-2 rounded-xl transition cursor-pointer flex items-center justify-between group {($aiConfig.model === 'default' || $aiConfig.model === 'CODEX CLI (ASSINATURA)') ? 'bg-[#2b303c]' : 'hover:bg-[#282d38]'}"
     >
       <div>
-        <div class="text-[13px] font-semibold text-white">Default</div>
-        <div class="text-[10px] text-slate-400 group-hover:text-slate-300">Recommended set of models</div>
+        <div class="text-[13px] font-semibold text-white">Modelo padrão</div>
+        <div class="text-[12px] text-slate-400 group-hover:text-slate-300">Seleção padrão de modelos</div>
       </div>
       {#if $aiConfig.model === 'default' || $aiConfig.model === 'CODEX CLI (ASSINATURA)'}
         <Check size={15} class="text-white shrink-0 ml-2" />
@@ -109,11 +109,11 @@
 
     <!-- Controle Rápido de Reasoning Effort integrado -->
     <div class="px-3 py-1.5 bg-[#171920]/80 rounded-xl border border-[#2b303c] space-y-1.5">
-      <div class="flex items-center justify-between text-[10px] text-slate-400">
+      <div class="flex items-center justify-between text-[12px] text-slate-400">
         <span class="font-medium flex items-center gap-1 text-cyan-300">
-          <Brain size={11} /> Reasoning Effort:
+          <Brain size={11} /> Raciocínio:
         </span>
-        <span class="uppercase font-bold text-[9px] text-emerald-400">
+        <span class="uppercase font-bold text-[12px] text-emerald-400">
           {$aiConfig.reasoningEffort}
         </span>
       </div>
@@ -129,7 +129,7 @@
           <button
             type="button"
             on:click={() => selectReasoning(effort.id as ReasoningEffort)}
-            class="py-1 rounded text-[10px] font-bold text-center transition cursor-pointer {isEffortActive ? 'bg-cyan-500 text-black shadow-sm' : 'bg-[#222631] text-slate-400 hover:text-slate-200 hover:bg-[#2a2f3d]'}"
+            class="py-1 rounded text-[12px] font-bold text-center transition cursor-pointer {isEffortActive ? 'bg-cyan-500 text-black shadow-sm' : 'bg-[#222631] text-slate-400 hover:text-slate-200 hover:bg-[#2a2f3d]'}"
           >
             {effort.label}
           </button>

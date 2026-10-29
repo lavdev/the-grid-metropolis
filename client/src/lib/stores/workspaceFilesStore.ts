@@ -3,12 +3,13 @@ import { writable, derived, get } from 'svelte/store';
 export interface WorkspaceFile {
   path: string;
   name: string;
-  language: 'rust' | 'typescript' | 'json' | 'markdown' | 'sql';
+  language: 'rust' | 'typescript' | 'javascript' | 'python' | 'json' | 'sql' | 'bash' | 'html' | 'css' | 'markdown' | 'text';
   authorDroid: string;
   accentColor: string;
   content: string;
   linesCount: number;
   lastModified: string;
+  error?: string;
 }
 
 const DEFAULT_FILES: Record<string, WorkspaceFile[]> = {
@@ -196,13 +197,83 @@ impl VectorClock {
 };
 
 export const workspaceFiles = writable<Record<string, WorkspaceFile[]>>(DEFAULT_FILES);
-export const activeFilePath = writable<string | null>('src/storage/engine.rs');
+export const activeFilePath = writable<string | null>(null);
 export const terminalViewTab = writable<'CONSOLE' | 'VIM_INSPECTOR'>('CONSOLE');
 export const droidViewFilter = writable<string | null>(null); // null = Todos, string = ID do Droid selecionado
+export const workspaceFileLoading = writable<string | null>(null);
 
-export function openFileInVim(path: string) {
+export function inferWorkspaceLanguage(path: string): WorkspaceFile['language'] {
+  const extension = path.split(/[.?]/).pop()?.toLowerCase() || '';
+  if (extension === 'rs') return 'rust';
+  if (['ts', 'tsx'].includes(extension)) return 'typescript';
+  if (['js', 'jsx', 'mjs', 'cjs'].includes(extension)) return 'javascript';
+  if (['py'].includes(extension)) return 'python';
+  if (['json', 'jsonc'].includes(extension)) return 'json';
+  if (extension === 'sql') return 'sql';
+  if (['sh', 'bash', 'zsh'].includes(extension)) return 'bash';
+  if (['html', 'htm', 'xml', 'svg'].includes(extension)) return 'html';
+  if (['css', 'scss', 'less'].includes(extension)) return 'css';
+  if (['md', 'markdown'].includes(extension)) return 'markdown';
+  return 'text';
+}
+
+function upsertWorkspaceFile(projectId: string, file: WorkspaceFile) {
+  workspaceFiles.update((current) => {
+    const files = current[projectId] || [];
+    return {
+      ...current,
+      [projectId]: [...files.filter((candidate) => candidate.path !== file.path), file],
+    };
+  });
+}
+
+export async function loadWorkspaceFile(projectId: string, path: string): Promise<WorkspaceFile> {
+  workspaceFileLoading.set(path);
+  try {
+    const candidatePaths = [path];
+    // Respostas com links absolutos podem ser extraídas como `tests/src/...`
+    // quando o nome do workspace termina em `-tests`; tente a forma relativa real.
+    if (path.startsWith('tests/')) candidatePaths.push(path.slice('tests/'.length));
+
+    let lastError = `Não foi possível carregar ${path}`;
+    for (const candidatePath of candidatePaths) {
+      const response = await fetch(`/api/v1/projects/${encodeURIComponent(projectId)}/files?path=${encodeURIComponent(candidatePath)}`);
+      if (response.ok) {
+        const file = await response.json() as WorkspaceFile;
+        upsertWorkspaceFile(projectId, { ...file, path });
+        return { ...file, path };
+      }
+      const payload = await response.json().catch(() => null) as { error?: string } | null;
+      lastError = payload?.error || lastError;
+    }
+    throw new Error(lastError);
+  } finally {
+    workspaceFileLoading.update((current) => (current === path ? null : current));
+  }
+}
+
+export async function openFileInVim(path: string, projectId?: string) {
   activeFilePath.set(path);
   terminalViewTab.set('VIM_INSPECTOR');
+
+  if (!projectId) return;
+  try {
+    await loadWorkspaceFile(projectId, path);
+  } catch (error) {
+    const existing = get(workspaceFiles)[projectId]?.find((file) => file.path === path);
+    if (existing?.content) return;
+    upsertWorkspaceFile(projectId, {
+      path,
+      name: path.split(/[\\/]/).pop() || path,
+      language: inferWorkspaceLanguage(path),
+      authorDroid: 'Artifact',
+      accentColor: '#67e8f9',
+      content: '',
+      linesCount: 0,
+      lastModified: '—',
+      error: error instanceof Error ? error.message : 'Arquivo indisponível',
+    });
+  }
 }
 
 export function closeVimInspector() {

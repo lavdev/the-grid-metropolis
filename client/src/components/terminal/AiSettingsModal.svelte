@@ -209,7 +209,7 @@
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
     <!-- Caixa do Modal Estilo Cyber-Console -->
     <div
-      class="relative w-full max-w-2xl bg-[#070b14] border-2 rounded-2xl shadow-[0_0_50px_rgba(0,240,255,0.25)] flex flex-col overflow-hidden select-none"
+      class="relative w-full max-w-2xl max-h-[92dvh] bg-[#070b14] border-2 rounded-2xl shadow-[0_0_50px_rgba(0,240,255,0.25)] flex flex-col overflow-hidden select-none"
       style="border-color: {currentProviderConfig.color}80; box-shadow: 0 0 40px {currentProviderConfig.color}25"
     >
       <!-- Feixe Superior Luminoso -->
@@ -219,7 +219,7 @@
       ></div>
 
       <!-- Cabeçalho do Modal -->
-      <header class="p-4 sm:p-5 border-b border-slate-800 bg-slate-950/70 flex items-center justify-between">
+      <header class="shrink-0 p-4 sm:p-5 border-b border-slate-800 bg-slate-950/70 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div
             class="w-10 h-10 rounded-xl border flex items-center justify-center bg-black/60 shadow-md"
@@ -228,16 +228,16 @@
             <Cpu size={20} />
           </div>
           <div>
-            <h2 class="font-pixel-title text-base sm:text-lg text-white font-bold tracking-wider flex items-center gap-2">
+            <h2 class="font-ui text-base sm:text-lg text-white font-bold tracking-normal flex items-center gap-2">
               <span>CONFIGURAÇÃO DE MODELOS &amp; IA</span>
               <span
-                class="text-[9px] px-2 py-0.5 rounded font-mono uppercase font-bold border"
+                class="text-[12px] px-2 py-0.5 rounded font-ui uppercase font-bold border"
                 style="color: {currentProviderConfig.color}; border-color: {currentProviderConfig.color}50; background: {currentProviderConfig.color}15"
               >
                 {currentProviderConfig.badge}
               </span>
             </h2>
-            <p class="text-xs text-slate-400 font-mono">
+            <p class="text-sm text-slate-400 font-ui">
               Conecte suas chaves reais para ativar o streaming e Chain-of-Thought nos Droids
             </p>
           </div>
@@ -254,10 +254,10 @@
       </header>
 
       <!-- Conteúdo do Formulário -->
-      <div class="p-4 sm:p-6 space-y-5 overflow-y-auto max-h-[75vh]">
+      <div class="p-4 sm:p-6 space-y-5 flex-1 min-h-0 overflow-y-auto">
         <!-- 1. Seleção de Provedor de IA -->
         <div class="space-y-2">
-          <div class="text-[11px] font-pixel-title text-slate-300 uppercase tracking-wider block">
+          <div class="text-[12px] font-ui text-slate-300 uppercase tracking-normal block">
             1. Selecione o Provedor de IA:
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
@@ -272,13 +272,13 @@
                 style="{isSelected ? `border-color: ${prov.color}; ring-color: ${prov.color}; color: white;` : ''}"
               >
                 <div class="flex items-center justify-between">
-                  <span class="text-xs font-pixel-title font-bold truncate">{prov.name}</span>
+                  <span class="text-sm font-ui font-bold truncate">{prov.name}</span>
                   {#if isSelected}
                     <span class="w-2 h-2 rounded-full animate-ping shrink-0" style="background: {prov.color}"></span>
                   {/if}
                 </div>
                 <span
-                  class="text-[7.5px] font-mono px-1.5 py-0.5 rounded w-max uppercase font-bold"
+                  class="text-[7.5px] font-ui px-1.5 py-0.5 rounded w-max uppercase font-bold"
                   style="background: {prov.color}20; color: {prov.color}"
                 >
                   {prov.badge}
@@ -294,20 +294,20 @@
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span class="text-xs font-pixel-title text-emerald-300 font-bold tracking-wider">
+                <span class="text-sm font-ui text-emerald-300 font-bold tracking-normal">
                   SESSÃO CODEX CLI CONECTADA (ASSINATURA CHATGPT)
                 </span>
               </div>
-              <span class="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase font-bold">
+              <span class="text-[12px] font-ui px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase font-bold">
                 Custo: Zero API Tokens
               </span>
             </div>
 
-            <p class="text-[11px] text-slate-300 font-mono leading-relaxed">
+            <p class="text-[12px] text-slate-300 font-ui leading-relaxed">
               O processamento é realizado pelo binário oficial do <strong>Codex CLI</strong> no seu sistema operacional, debitando diretamente da cota da sua assinatura <strong>ChatGPT Plus / Pro / Team</strong> via sessão OAuth local.
             </p>
 
-            <div class="pt-2 border-t border-emerald-900/40 space-y-1.5 text-[10px] font-mono">
+            <div class="pt-2 border-t border-emerald-900/40 space-y-1.5 text-[12px] font-ui">
               <div class="flex items-center justify-between">
                 <span class="text-slate-400">Status Local:</span>
                 <span class="{$codexStatus.installed ? 'text-emerald-400' : 'text-amber-400'} font-bold flex items-center gap-1">
@@ -327,18 +327,18 @@
                 </span>
               </div>
               {#if $codexStatus.executablePath}
-                <div class="flex items-center justify-between text-[9px] text-slate-500 truncate">
+                <div class="flex items-center justify-between text-[12px] text-slate-500 truncate">
                   <span>Caminho:</span>
-                  <span class="font-mono truncate max-w-[320px] text-slate-400">{$codexStatus.executablePath}</span>
+                  <span class="font-ui truncate max-w-[320px] text-slate-400">{$codexStatus.executablePath}</span>
                 </div>
               {/if}
             </div>
           </div>
         {:else if $aiConfig.provider === 'ollama'}
           <div class="space-y-2">
-            <div class="text-[11px] font-pixel-title text-slate-300 uppercase tracking-wider flex items-center justify-between">
+            <div class="text-[12px] font-ui text-slate-300 uppercase tracking-normal flex items-center justify-between">
               <span>Endpoint do Servidor Ollama:</span>
-              <span class="text-[10px] text-amber-400 font-mono">Sem necessidade de chave</span>
+              <span class="text-[12px] text-amber-400 font-ui">Sem necessidade de chave</span>
             </div>
             <div class="relative flex items-center">
               <Server class="absolute left-3 text-slate-500 w-4 h-4" />
@@ -346,14 +346,14 @@
                 type="text"
                 bind:value={$aiConfig.ollamaBaseUrl}
                 placeholder="http://localhost:11434"
-                class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-black/80 border border-slate-700 text-slate-100 font-mono text-xs focus:outline-none focus:border-amber-400 transition"
+                class="w-full pl-9 pr-4 py-2.5 rounded-xl bg-black/80 border border-slate-700 text-slate-100 font-ui text-sm focus:outline-none focus:border-amber-400 transition"
               />
             </div>
           </div>
         {:else}
           <div class="space-y-2">
             <div class="flex items-center justify-between">
-              <div class="text-[11px] font-pixel-title text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <div class="text-[12px] font-ui text-slate-300 uppercase tracking-normal flex items-center gap-1.5">
                 <Key size={13} class="text-cyan-400" />
                 <span>Chave de API ({currentProviderConfig.name}):</span>
               </div>
@@ -361,7 +361,7 @@
                 href={currentProviderConfig.keyHelpUrl}
                 target="_blank"
                 rel="noreferrer"
-                class="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1"
+                class="text-[12px] font-ui text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1"
               >
                 <span>Obter chave oficial</span>
                 <ExternalLink size={10} />
@@ -373,7 +373,7 @@
                 type={showKey ? 'text' : 'password'}
                 bind:value={$aiConfig.apiKey}
                 placeholder="Cole sua chave aqui (ex: AIzaSy...)"
-                class="w-full pl-3 pr-10 py-2.5 rounded-xl bg-black/80 border text-slate-100 font-mono text-xs focus:outline-none transition"
+                class="w-full pl-3 pr-10 py-2.5 rounded-xl bg-black/80 border text-slate-100 font-ui text-sm focus:outline-none transition"
                 style="border-color: {currentProviderConfig.color}60; focus:border-color: {currentProviderConfig.color}"
               />
               <button
@@ -389,7 +389,7 @@
                 {/if}
               </button>
             </div>
-            <p class="text-[10px] text-slate-500 font-mono">
+            <p class="text-[12px] text-slate-500 font-ui">
               Sua chave é armazenada com segurança localmente no navegador e nunca é enviada a servidores de terceiros.
             </p>
           </div>
@@ -398,9 +398,9 @@
         <!-- Seleção de Nível de Raciocínio (Reasoning Effort) do Codex -->
         {#if $aiConfig.provider === 'codex'}
           <div class="space-y-2 p-3 rounded-xl bg-slate-950/60 border border-emerald-500/30">
-            <div class="text-[11px] font-pixel-title text-slate-300 uppercase tracking-wider flex items-center justify-between">
+            <div class="text-[12px] font-ui text-slate-300 uppercase tracking-normal flex items-center justify-between">
               <span>Nível de Raciocínio (Reasoning Effort):</span>
-              <span class="text-[10px] text-emerald-400 font-mono">Profundidade & Tokens</span>
+              <span class="text-[12px] text-emerald-400 font-ui">Profundidade & Tokens</span>
             </div>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {#each [
@@ -417,8 +417,8 @@
                     ? 'bg-emerald-950/60 border-emerald-400 text-emerald-300 shadow-[0_0_10px_rgba(52,211,153,0.3)]'
                     : 'bg-black/40 border-slate-800 text-slate-400 hover:text-slate-200'}"
                 >
-                  <div class="font-bold font-pixel-title text-xs">{effort.name}</div>
-                  <div class="text-[9px] font-mono text-slate-500 truncate">{effort.desc}</div>
+                  <div class="font-bold font-ui text-sm">{effort.name}</div>
+                  <div class="text-[12px] font-ui text-slate-500 truncate">{effort.desc}</div>
                 </button>
               {/each}
             </div>
@@ -427,7 +427,7 @@
 
         <!-- 3. Seleção do Modelo Específico -->
         <div class="space-y-2">
-          <div class="text-[11px] font-pixel-title text-slate-300 uppercase tracking-wider block">
+          <div class="text-[12px] font-ui text-slate-300 uppercase tracking-normal block">
             2. Modelo Específico:
           </div>
           <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -436,7 +436,7 @@
               <button
                 type="button"
                 on:click={() => updateAiConfig({ model: mdl })}
-                class="px-3 py-2 rounded-xl border text-xs font-mono text-left transition cursor-pointer {isMdlSelected
+                class="px-3 py-2 rounded-xl border text-sm font-ui text-left transition cursor-pointer {isMdlSelected
                   ? 'bg-slate-900 border-cyan-400 text-cyan-300 shadow-sm'
                   : 'bg-black/40 border-slate-800 text-slate-400 hover:text-slate-200'}"
               >
@@ -449,7 +449,7 @@
         <!-- 4. Resultado do Teste de Conexão -->
         {#if testResult}
           <div
-            class="p-3 rounded-xl border flex items-center justify-between text-xs font-mono {testResult.success
+            class="p-3 rounded-xl border flex items-center justify-between text-sm font-ui {testResult.success
               ? 'bg-emerald-950/50 border-emerald-500/60 text-emerald-300 shadow-[0_0_15px_rgba(52,211,153,0.2)]'
               : 'bg-rose-950/50 border-rose-500/60 text-rose-300 shadow-[0_0_15px_rgba(244,63,94,0.2)]'}"
           >
@@ -462,7 +462,7 @@
               <span>{testResult.message}</span>
             </div>
             {#if testResult.latency}
-              <span class="text-[10px] font-pixel-terminal text-emerald-400 text-sm font-bold shrink-0">
+              <span class="text-[12px] font-code text-emerald-400 text-sm font-bold shrink-0">
                 {testResult.latency}ms
               </span>
             {/if}
@@ -471,12 +471,12 @@
       </div>
 
       <!-- Rodapé de Ações -->
-      <footer class="p-4 sm:p-5 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between">
+      <footer class="shrink-0 p-4 sm:p-5 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between">
         <button
           type="button"
           on:click={handleTestConnection}
           disabled={isTesting}
-          class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-pixel-title text-xs tracking-wider flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
+          class="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-ui text-sm tracking-normal flex items-center gap-2 transition cursor-pointer disabled:opacity-50"
         >
           <Zap size={14} class={isTesting ? 'animate-spin text-amber-400' : 'text-cyan-400'} />
           <span>{isTesting ? 'TESTANDO...' : 'TESTAR CONEXÃO'}</span>
@@ -485,7 +485,7 @@
         <button
           type="button"
           on:click={handleClose}
-          class="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 font-pixel-title text-xs font-black tracking-wider shadow-[0_0_15px_rgba(0,240,255,0.4)] transition cursor-pointer"
+          class="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-300 hover:to-blue-400 text-slate-950 font-ui text-sm font-black tracking-normal shadow-[0_0_15px_rgba(0,240,255,0.4)] transition cursor-pointer"
         >
           SALVAR &amp; APLICAR
         </button>

@@ -1,4 +1,13 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+
+  onMount(() => {
+    const compactViewport = window.matchMedia('(max-width: 900px)');
+    const syncSidebar = () => isSidebarCollapsed.set(compactViewport.matches);
+    syncSidebar();
+    compactViewport.addEventListener('change', syncSidebar);
+    return () => compactViewport.removeEventListener('change', syncSidebar);
+  });
   import {
     projects,
     activeProjectId,
@@ -158,7 +167,7 @@
 </script>
 
 <aside
-  class="h-full bg-[#07090e]/95 border-r border-[#1a2333] flex flex-col transition-all duration-300 relative select-none z-40 backdrop-blur-md {$isSidebarCollapsed ? 'w-16' : 'w-80 md:w-96'}"
+  class="workspace-sidebar h-full flex flex-col transition-all duration-300 relative select-none z-40 {$isSidebarCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}"
 >
   <!-- Botão de Minimizar/Expandir Lateral -->
   <button
@@ -175,60 +184,34 @@
   </button>
 
   {#if !$isSidebarCollapsed}
-    <!-- Cabeçalho Estilo Habblaud / Retro Office -->
-    <div class="p-3.5 border-b border-[#162032] flex flex-col gap-2.5">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded bg-[#00f0ff]/10 border border-[#00f0ff]/40 flex items-center justify-center text-[#00f0ff]">
-            <Terminal size={16} />
-          </div>
-          <div>
-            <span class="font-pixel-title text-sm tracking-wider text-cyan-300 font-bold">WORKSPACES</span>
-            <span class="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-500/30 ml-1.5 font-mono">
-              ONLINE
-            </span>
-          </div>
-        </div>
-
+    <div class="sidebar-header">
+      <div class="city-brand">
+        <div class="brand-icon"><Terminal size={21} /></div>
+        <div><div class="font-brand brand-name">THE GRID</div><div class="brand-subtitle">METROPOLIS / COMMAND CENTER</div></div>
+      </div>
+      <div class="sidebar-heading-row">
+        <h2>Workspaces <span class="workspace-count">{$projects.length}</span></h2>
         <div class="flex items-center gap-1.5">
-          <!-- Botão Droid Forge (Estilo Paperclip) -->
-          <button
-            type="button"
-            on:click={() => openDroidForge()}
-            class="flex items-center gap-1 px-2.5 py-1 rounded bg-fuchsia-950/70 hover:bg-fuchsia-900/90 text-fuchsia-300 border border-fuchsia-500/40 hover:border-fuchsia-400 font-pixel-title text-[10px] tracking-wide transition-all cursor-pointer shadow-[0_0_8px_rgba(255,0,127,0.2)]"
-            title="Abrir Droid Forge & Roster"
-          >
-            <Bot size={12} />
-            <span>FORGE</span>
-          </button>
-
-          <!-- Botão Novo Workspace -->
-          <button
-            type="button"
-            on:click={() => (showNewProjectModal = true)}
-            class="flex items-center gap-1 px-2.5 py-1 rounded bg-[#00f0ff]/10 hover:bg-[#00f0ff]/20 text-[#00f0ff] border border-[#00f0ff]/40 hover:border-[#00f0ff] font-pixel-title text-[10px] tracking-wide transition-all cursor-pointer"
-            title="Novo Projeto / Terminal"
-          >
-            <Plus size={12} />
-            <span>NOVO</span>
-          </button>
+          <button type="button" on:click={() => openDroidForge()} class="sidebar-action forge-action" title="Abrir Droid Forge & Roster"><Bot size={14} /> Forge</button>
+          <button type="button" on:click={() => (showNewProjectModal = true)} class="sidebar-action" title="Novo Projeto / Terminal"><Plus size={14} /> Novo</button>
         </div>
       </div>
 
       <!-- Barra de Pesquisa de Projetos / Droids -->
       <div class="relative">
-        <Search size={13} class="absolute left-2.5 top-2.5 text-slate-500" />
+        <Search size={15} class="absolute left-3 top-3 text-slate-400" />
         <input
           type="text"
-          placeholder="Buscar projeto, droid ou instrução..."
+          aria-label="Buscar projetos e droids"
+          placeholder="Buscar projeto ou droid..."
           bind:value={$projectSearchQuery}
-          class="w-full bg-[#0a0f18] border border-[#1e2a3f] focus:border-[#00f0ff]/70 text-slate-200 text-xs pl-8 pr-3 py-1.5 rounded outline-none font-mono transition-colors placeholder:text-slate-600"
+          class="sidebar-search"
         />
         {#if $projectSearchQuery}
           <button
             type="button"
             on:click={() => projectSearchQuery.set('')}
-            class="absolute right-2.5 top-2 text-slate-400 hover:text-white text-xs cursor-pointer"
+            class="absolute right-2.5 top-2 text-slate-400 hover:text-white text-sm cursor-pointer"
           >
             ×
           </button>
@@ -241,12 +224,12 @@
       {#each filteredProjects as project (project.id)}
         {@const isSelected = project.id === $activeProjectId}
         <div
-          class="rounded-lg border transition-all duration-200 overflow-hidden {isSelected
-            ? 'bg-[#0f1726]/90 border-[#00f0ff]/60 shadow-[0_0_15px_rgba(0,240,255,0.15)] ring-1 ring-[#00f0ff]/30'
+          class="project-card rounded-lg border transition-all duration-200 overflow-hidden {isSelected
+            ? 'bg-[#101c2b] border-[#3a6376]'
             : 'bg-[#0a0f18]/70 border-[#182335] hover:border-slate-700/80 hover:bg-[#0c1320]'}"
         >
           <!-- Cabeçalho do Projeto -->
-          <div class="w-full text-left p-2.5 flex items-center justify-between border-b border-[#162235]/60 group">
+          <div class="project-card-header w-full text-left flex items-center justify-between border-b border-[#26364c] group">
             <button
               type="button"
               on:click={() => {
@@ -256,14 +239,14 @@
               class="flex items-center gap-2 min-w-0 flex-1 text-left cursor-pointer focus:outline-none"
             >
               <div
-                class="w-6 h-6 rounded flex items-center justify-center shrink-0 text-xs font-pixel-title"
+                class="w-6 h-6 rounded flex items-center justify-center shrink-0 text-sm font-ui"
                 style="background: {project.accentColor}18; color: {project.accentColor}; border: 1px solid {project.accentColor}40"
               >
                 <FolderGit2 size={13} />
               </div>
               <div class="truncate">
                 <div class="flex items-center gap-1.5">
-                  <span class="font-pixel-title text-xs font-semibold text-slate-200 group-hover:text-cyan-300 transition-colors">
+                  <span class="font-ui text-sm font-semibold text-slate-200 group-hover:text-cyan-300 transition-colors">
                     {project.name}
                   </span>
                   {#if project.status === 'PROCESSING'}
@@ -272,7 +255,7 @@
                     <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                   {/if}
                 </div>
-                <div class="text-[10px] text-slate-500 font-mono truncate" title={project.path}>
+                <div class="text-[12px] text-slate-500 font-mono truncate" title={project.path}>
                   {project.path}
                 </div>
               </div>
@@ -280,7 +263,7 @@
 
             <!-- Badges e Botão de Configuração de Droids (Harness) -->
             <div class="flex items-center gap-1.5 shrink-0 ml-2">
-              <span class="text-[9px] px-1.5 py-0.5 rounded bg-[#131c2c] text-cyan-400 font-mono border border-cyan-500/20">
+              <span class="text-[12px] px-1.5 py-0.5 rounded bg-[#131c2c] text-cyan-400 font-mono border border-cyan-500/20">
                 {project.droids.length} {project.droids.length === 1 ? 'Droid' : 'Droids'}
               </span>
 
@@ -316,10 +299,10 @@
                   selectDroidInActiveProject(droid.id);
                   setDroidFilter(droid.id);
                 }}
-                class="w-full text-left p-2.5 rounded-xl flex items-start gap-2.5 transition-all duration-300 cursor-pointer focus:outline-none relative overflow-hidden {isWorking
+                class="droid-card w-full text-left rounded-lg flex items-start gap-2.5 transition-all duration-300 cursor-pointer relative overflow-hidden {isWorking
                   ? 'bg-[#0f172a] shadow-xl ring-2 ring-offset-1 ring-offset-[#070b14]'
                   : isDroidActive
-                  ? 'bg-[#142033] border border-[#00f0ff]/50 shadow-[0_0_10px_rgba(0,240,255,0.15)]'
+                  ? 'bg-[#17283b] border border-[#426880]'
                   : 'bg-[#0a0f19] border border-[#162032] hover:bg-[#0e1624] hover:border-slate-700'}"
                 style="{isWorking ? `border: 1.5px solid ${droid.accentColor}; box-shadow: 0 0 20px ${droid.accentColor}55, inset 0 0 12px ${droid.accentColor}25; --tw-ring-color: ${droid.accentColor};` : ''}"
               >
@@ -340,15 +323,15 @@
                     {#if droid.avatarType === 'spark'}
                       <img src="/assets/spark/idle_0.png" alt={droid.name} class="w-7 h-7 object-contain pixelated {isWorking ? 'animate-bounce' : ''}" />
                     {:else if droid.avatarType === 'hacker'}
-                      <div class="text-xs font-pixel-title font-bold {isWorking ? 'animate-pulse' : ''}" style="color: {droid.accentColor}">
+                      <div class="text-sm font-ui font-bold {isWorking ? 'animate-pulse' : ''}" style="color: {droid.accentColor}">
                         &lt;/&gt;
                       </div>
                     {:else if droid.avatarType === 'scientist'}
-                      <div class="text-xs font-pixel-title font-bold {isWorking ? 'animate-pulse' : ''}" style="color: {droid.accentColor}">
+                      <div class="text-sm font-ui font-bold {isWorking ? 'animate-pulse' : ''}" style="color: {droid.accentColor}">
                         [EXP]
                       </div>
                     {:else}
-                      <div class="text-xs font-pixel-title font-bold {isWorking ? 'animate-pulse' : ''}" style="color: {droid.accentColor}">
+                      <div class="text-sm font-ui font-bold {isWorking ? 'animate-pulse' : ''}" style="color: {droid.accentColor}">
                         🛡️
                       </div>
                     {/if}
@@ -366,9 +349,9 @@
 
                 <!-- Info do Droid (Estilo Habblaud Card) -->
                 <div class="flex-1 min-w-0">
-                  <div class="flex items-center justify-between gap-1">
+                  <div class="droid-identity">
                     <div class="flex items-center gap-1.5 truncate">
-                      <span class="font-pixel-title text-[11px] font-bold truncate" style="color: {isWorking ? droid.accentColor : '#e2e8f0'}">
+                      <span class="droid-name font-ui font-semibold truncate" style="color: {isWorking ? droid.accentColor : '#e2e8f0'}">
                         {droid.name}
                       </span>
                       {#if isWorking}
@@ -377,25 +360,25 @@
                     </div>
 
                     <span
-                      class="text-[8px] font-mono px-1 py-0.2 rounded border uppercase tracking-wider font-bold shrink-0"
-                      style="color: {droid.accentColor}; background: {droid.accentColor}18; border-color: {droid.accentColor}{isWorking ? '90' : '30'}"
+                      class="droid-role"
+
                     >
                       {isWorking ? '⚡ ATIVO' : droid.planBadge}
                     </span>
                   </div>
 
                   <div class="flex items-center gap-1.5 mt-0.5">
-                    <span class="text-[9px] font-mono font-bold" style="color: {isWorking ? droid.accentColor : '#94a3b8'}">
+                    <span class="text-[12px] font-mono font-bold" style="color: {isWorking ? droid.accentColor : '#94a3b8'}">
                       {isWorking ? (droid.status === 'THINKING' ? '💭 Elaborando...' : '⚡ Codificando...') : droid.status === 'ONLINE' ? '● Pronto' : '● Idle'}
                     </span>
-                    <span class="text-[9px] text-slate-600 font-mono">•</span>
-                    <span class="text-[9px] font-mono text-cyan-400/90">
+                    <span class="text-[12px] text-slate-600 font-mono">•</span>
+                    <span class="text-[12px] font-mono text-cyan-400/90">
                       {(droid.tokens / 1000).toFixed(1)}k tok
                     </span>
                   </div>
 
                   <!-- Detalhe da Tarefa Atual / Último Status -->
-                  <div class="mt-1 text-[10px] text-slate-400 font-mono truncate flex items-center gap-1">
+                  <div class="droid-task mt-2 text-[12px] text-slate-400 font-ui flex items-start gap-1.5">
                     {#if isWorking}
                       <span class="w-2 h-2 rounded-full animate-pulse shrink-0" style="background: {droid.accentColor}"></span>
                     {:else if droid.status === 'ONLINE'}
@@ -403,7 +386,7 @@
                     {:else}
                       <Clock size={10} class="text-amber-400 shrink-0" />
                     {/if}
-                    <span class="truncate" style="{isWorking ? 'color: #f1f5f9; font-weight: 600;' : ''}">{droid.statusDetail}</span>
+                    <span class="task-description" title={droid.statusDetail} style="{isWorking ? 'color: #f1f5f9; font-weight: 600;' : ''}">{droid.statusDetail}</span>
                   </div>
                 </div>
               </button>
@@ -413,20 +396,20 @@
       {/each}
 
       {#if filteredProjects.length === 0}
-        <div class="text-center py-8 text-slate-500 font-mono text-xs">
+        <div class="text-center py-8 text-slate-500 font-mono text-sm">
           Nenhum projeto ou droid encontrado.
         </div>
       {/if}
     </div>
 
     <!-- Rodapé da Sidebar: Estatísticas Globais -->
-    <div class="p-3 border-t border-[#162032] bg-[#05080e] flex items-center justify-between text-[10px] font-mono text-slate-400">
+    <div class="sidebar-footer">
       <div class="flex items-center gap-1.5">
         <CircleDot size={10} class="text-emerald-400 animate-pulse" />
-        <span>Core Terminal v0.3</span>
+        <span>Core v0.3</span>
       </div>
-      <div class="text-cyan-400/80">
-        {$projects.length} Workspaces // {$droidRoster.length} Droids
+      <div class="text-slate-400">
+        {$droidRoster.length} droids no roster
       </div>
     </div>
   {:else}
@@ -482,7 +465,7 @@
 
 <!-- Modal: Criar Novo Projeto / Workspace com Harness de Droids -->
 {#if showNewProjectModal}
-  <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 font-mono select-none">
+  <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 font-ui select-none">
     <div class="w-full max-w-2xl max-h-[92vh] bg-[#090e1a] border-2 border-[#00f0ff]/50 rounded-2xl shadow-[0_0_40px_rgba(0,240,255,0.25)] flex flex-col overflow-hidden">
       <!-- Cabeçalho -->
       <div class="px-5 py-4 border-b border-[#18263e] bg-[#0c1322] flex items-center justify-between">
@@ -491,10 +474,10 @@
             <Terminal size={17} />
           </div>
           <div>
-            <h2 class="font-pixel-title text-sm sm:text-base text-cyan-300 font-bold tracking-wider">
+            <h2 class="font-ui text-sm sm:text-base text-cyan-300 font-bold tracking-normal">
               NOVO WORKSPACE & HARNESS DE DROIDS
             </h2>
-            <p class="text-[11px] text-slate-400 font-mono">
+            <p class="text-[12px] text-slate-400 font-mono">
               Defina o diretório de trabalho e selecione os droids especialistas para a missão.
             </p>
           </div>
@@ -513,7 +496,7 @@
         <!-- Nome e Path -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
-            <label for="input-proj-name" class="text-xs text-slate-300 block mb-1 font-bold">
+            <label for="input-proj-name" class="text-sm text-slate-300 block mb-1 font-bold">
               Nome do Projeto:
             </label>
             <input
@@ -521,18 +504,18 @@
               type="text"
               bind:value={newProjName}
               placeholder="Ex: Notex RAG Engine, Auth Microservice..."
-              class="w-full bg-[#050810] border border-[#1e2a3f] focus:border-[#00f0ff] text-slate-100 text-xs px-3 py-2 rounded-lg outline-none"
+              class="w-full bg-[#050810] border border-[#1e2a3f] focus:border-[#00f0ff] text-slate-100 text-sm px-3 py-2 rounded-lg outline-none"
             />
           </div>
 
           <div>
-            <label for="input-proj-model" class="text-xs text-slate-300 block mb-1 font-bold">
+            <label for="input-proj-model" class="text-sm text-slate-300 block mb-1 font-bold">
               Modelo Principal do Terminal:
             </label>
             <select
               id="input-proj-model"
               bind:value={selectedModel}
-              class="w-full bg-[#050810] border border-[#1e2a3f] focus:border-[#00f0ff] text-slate-100 text-xs px-3 py-2 rounded-lg outline-none cursor-pointer"
+              class="w-full bg-[#050810] border border-[#1e2a3f] focus:border-[#00f0ff] text-slate-100 text-sm px-3 py-2 rounded-lg outline-none cursor-pointer"
             >
               {#each MODEL_OPTIONS as opt}
                 <option value={opt}>{opt}</option>
@@ -542,7 +525,7 @@
         </div>
 
         <div>
-          <label for="input-proj-path" class="text-xs text-slate-300 block mb-1 font-bold">
+          <label for="input-proj-path" class="text-sm text-slate-300 block mb-1 font-bold">
             Caminho do Diretório (Workspace Path):
           </label>
           <input
@@ -550,20 +533,20 @@
             type="text"
             bind:value={newProjPath}
             placeholder="Ex: C:\Workspace\meu-projeto"
-            class="w-full bg-[#050810] border border-[#1e2a3f] focus:border-[#00f0ff] text-slate-100 text-xs px-3 py-2 rounded-lg outline-none"
+            class="w-full bg-[#050810] border border-[#1e2a3f] focus:border-[#00f0ff] text-slate-100 text-sm px-3 py-2 rounded-lg outline-none"
           />
         </div>
 
         <!-- Seção de Alocação de Droids (Paperclip Harness) -->
         <div class="pt-2 border-t border-[#18263e]">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-xs text-slate-200 font-bold flex items-center gap-1.5">
+            <span class="text-sm text-slate-200 font-bold flex items-center gap-1.5">
               <Bot size={13} class="text-cyan-400" />
               <span>ALOCAÇÃO DE DROIDS ({selectedDroidIds.length} selecionado{selectedDroidIds.length === 1 ? '' : 's'})</span>
             </span>
 
             <!-- Presets Rápidos -->
-            <div class="flex items-center gap-1 text-[10px]">
+            <div class="flex items-center gap-1 text-[12px]">
               <span class="text-slate-500 mr-1 hidden sm:inline">Presets:</span>
               <button
                 type="button"
@@ -598,7 +581,7 @@
                 on:click={() => toggleDroidSelection(droid.id)}
                 class="text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5 {isChecked
                   ? 'bg-[#101b2e] border-cyan-400/80 shadow-[0_0_12px_rgba(0,240,255,0.15)] ring-1 ring-cyan-400/40'
-                  : 'bg-[#060a14] border-[#182436] hover:border-slate-600 opacity-60 hover:opacity-100'}"
+                  : 'bg-[#060a14] border-[#182436] hover:border-slate-600 hover:bg-[#101a29]'}"
               >
                 <div class="flex items-center gap-2.5 min-w-0">
                   <div
@@ -608,19 +591,19 @@
                     {#if droid.avatarType === 'spark'}
                       <img src="/assets/spark/idle_0.png" alt={droid.name} class="w-7 h-7 object-contain pixelated" />
                     {:else if droid.avatarType === 'hacker'}
-                      <span class="text-xs font-pixel-title font-bold" style="color: {droid.accentColor}">&lt;/&gt;</span>
+                      <span class="text-sm font-ui font-bold" style="color: {droid.accentColor}">&lt;/&gt;</span>
                     {:else if droid.avatarType === 'scientist'}
-                      <span class="text-xs font-pixel-title font-bold" style="color: {droid.accentColor}">[EXP]</span>
+                      <span class="text-sm font-ui font-bold" style="color: {droid.accentColor}">[EXP]</span>
                     {:else}
-                      <span class="text-xs font-pixel-title font-bold" style="color: {droid.accentColor}">🛡️</span>
+                      <span class="text-sm font-ui font-bold" style="color: {droid.accentColor}">🛡️</span>
                     {/if}
                   </div>
 
                   <div class="truncate">
-                    <div class="font-pixel-title text-xs font-bold text-slate-100 truncate">
+                    <div class="font-ui text-sm font-bold text-slate-100 truncate">
                       {droid.name}
                     </div>
-                    <div class="text-[9px] text-slate-400 font-mono truncate">
+                    <div class="text-[12px] text-slate-400 font-ui truncate">
                       {droid.role} • {droid.planBadge}
                     </div>
                   </div>
@@ -646,7 +629,7 @@
         <button
           type="button"
           on:click={() => (showNewProjectModal = false)}
-          class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700 cursor-pointer"
+          class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-sm hover:bg-slate-700 cursor-pointer"
         >
           Cancelar
         </button>
@@ -654,7 +637,7 @@
           type="button"
           on:click={handleCreateProject}
           disabled={!newProjName.trim() || selectedDroidIds.length === 0}
-          class="px-4 py-1.5 rounded-lg font-pixel-title text-xs tracking-wider transition-all cursor-pointer {newProjName.trim() && selectedDroidIds.length > 0
+          class="px-4 py-1.5 rounded-lg font-ui text-sm tracking-normal transition-all cursor-pointer {newProjName.trim() && selectedDroidIds.length > 0
             ? 'bg-[#00f0ff] text-black font-bold hover:bg-cyan-300 shadow-[0_0_15px_rgba(0,240,255,0.4)]'
             : 'bg-slate-800 text-slate-500 cursor-not-allowed'}"
         >
@@ -667,7 +650,7 @@
 
 <!-- Modal: Reconfigurar Droids de Workspace Existente -->
 {#if showReconfigModal && reconfigTargetProject}
-  <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 font-mono select-none">
+  <div class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 font-ui select-none">
     <div class="w-full max-w-xl max-h-[90vh] bg-[#090e1a] border-2 border-cyan-500/50 rounded-2xl shadow-[0_0_40px_rgba(0,240,255,0.25)] flex flex-col overflow-hidden">
       <!-- Cabeçalho -->
       <div class="px-5 py-4 border-b border-[#18263e] bg-[#0c1322] flex items-center justify-between">
@@ -676,10 +659,10 @@
             <Wrench size={17} />
           </div>
           <div>
-            <h2 class="font-pixel-title text-sm sm:text-base text-cyan-300 font-bold tracking-wider">
+            <h2 class="font-ui text-sm sm:text-base text-cyan-300 font-bold tracking-normal">
               HARNESS CONFIG: {reconfigTargetProject.name.toUpperCase()}
             </h2>
-            <p class="text-[11px] text-slate-400 font-mono">
+            <p class="text-[12px] text-slate-400 font-mono">
               Altere a equipe de droids atuando neste workspace em tempo real.
             </p>
           </div>
@@ -696,11 +679,11 @@
       <!-- Presets & Lista de Seleção -->
       <div class="p-5 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
         <div class="flex items-center justify-between">
-          <span class="text-xs text-slate-300 font-bold">
+          <span class="text-sm text-slate-300 font-bold">
             Selecione os droids atribuídos ({reconfigSelectedDroidIds.length} selecionado{reconfigSelectedDroidIds.length === 1 ? '' : 's'}):
           </span>
 
-          <div class="flex items-center gap-1 text-[10px]">
+          <div class="flex items-center gap-1 text-[12px]">
             <button
               type="button"
               on:click={() => applyPreset('SOLO', true)}
@@ -733,7 +716,7 @@
               on:click={() => toggleDroidSelection(droid.id, true)}
               class="text-left p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-2.5 {isChecked
                 ? 'bg-[#101b2e] border-cyan-400/80 shadow-[0_0_12px_rgba(0,240,255,0.15)] ring-1 ring-cyan-400/40'
-                : 'bg-[#060a14] border-[#182436] hover:border-slate-600 opacity-60 hover:opacity-100'}"
+                : 'bg-[#060a14] border-[#182436] hover:border-slate-600 hover:bg-[#101a29]'}"
             >
               <div class="flex items-center gap-2.5 min-w-0">
                 <div
@@ -743,19 +726,19 @@
                   {#if droid.avatarType === 'spark'}
                     <img src="/assets/spark/idle_0.png" alt={droid.name} class="w-7 h-7 object-contain pixelated" />
                   {:else if droid.avatarType === 'hacker'}
-                    <span class="text-xs font-pixel-title font-bold" style="color: {droid.accentColor}">&lt;/&gt;</span>
+                    <span class="text-sm font-ui font-bold" style="color: {droid.accentColor}">&lt;/&gt;</span>
                   {:else if droid.avatarType === 'scientist'}
-                    <span class="text-xs font-pixel-title font-bold" style="color: {droid.accentColor}">[EXP]</span>
+                    <span class="text-sm font-ui font-bold" style="color: {droid.accentColor}">[EXP]</span>
                   {:else}
-                    <span class="text-xs font-pixel-title font-bold" style="color: {droid.accentColor}">🛡️</span>
+                    <span class="text-sm font-ui font-bold" style="color: {droid.accentColor}">🛡️</span>
                   {/if}
                 </div>
 
                 <div class="truncate">
-                  <div class="font-pixel-title text-xs font-bold text-slate-100 truncate">
+                  <div class="font-ui text-sm font-bold text-slate-100 truncate">
                     {droid.name}
                   </div>
-                  <div class="text-[9px] text-slate-400 font-mono truncate">
+                  <div class="text-[12px] text-slate-400 font-ui truncate">
                     {droid.role} • {droid.planBadge}
                   </div>
                 </div>
@@ -780,7 +763,7 @@
         <button
           type="button"
           on:click={() => (showReconfigModal = false)}
-          class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs hover:bg-slate-700 cursor-pointer"
+          class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-sm hover:bg-slate-700 cursor-pointer"
         >
           Cancelar
         </button>
@@ -788,7 +771,7 @@
           type="button"
           on:click={handleSaveReconfig}
           disabled={reconfigSelectedDroidIds.length === 0}
-          class="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-bold font-pixel-title text-xs tracking-wider transition-all cursor-pointer shadow-[0_0_15px_rgba(0,240,255,0.4)]"
+          class="px-4 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-bold font-ui text-sm tracking-normal transition-all cursor-pointer shadow-[0_0_15px_rgba(0,240,255,0.4)]"
         >
           SALVAR HARNESS ({reconfigSelectedDroidIds.length} DROID{reconfigSelectedDroidIds.length === 1 ? '' : 'S'})
         </button>
@@ -810,6 +793,33 @@
   }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: #00f0ff40;
+  }
+  .workspace-sidebar { flex-shrink: 0; background: #0b111cf5; border-right: 1px solid #2a394d; }
+  .sidebar-expanded { width: 320px; }
+  .sidebar-collapsed { width: 64px; }
+  .sidebar-header { display: flex; flex-direction: column; gap: 16px; padding: 24px 18px 18px; border-bottom: 1px solid #243247; }
+  .city-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .brand-icon { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px; color: #67e8f9; background: #132936; border: 1px solid #326174; border-radius: 8px; box-shadow: 0 0 18px #00f0ff0c; }
+  .brand-name { color: #a5f3fc; font-size: 18px; line-height: 1.4; }
+  .brand-subtitle { color: #a4b2c8; font-size: 9px; letter-spacing: .1em; margin-top: 3px; }
+  .sidebar-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .sidebar-heading-row h2 { font-size: 14px; font-weight: 600; }
+  .workspace-count { margin-left: 4px; padding: 1px 5px; border-radius: 4px; background: #1a293e; color: #a4b2c8; font-size: 12px; }
+  .sidebar-action { display: flex; align-items: center; gap: 5px; min-height: 30px; padding: 4px 8px; border: 1px solid #335065; border-radius: 5px; color: #b5ecf5; background: #152739; font-size: 12px; cursor: pointer; }
+  .sidebar-action:hover { border-color: #67e8f9; background: #1c3447; }
+  .forge-action { color: #e0b9f6; background: #241b32; border-color: #493657; }
+  .sidebar-search { width: 100%; padding: 9px 30px 9px 35px; background: #101a28; border: 1px solid #2b3a50; border-radius: 6px; color: #edf3fc; font-size: 13px; }
+  .project-card { flex-shrink: 0; }
+  .project-card-header { padding: 14px 10px; flex-wrap: wrap; gap: 10px; }
+  .droid-card { padding: 14px 10px; }
+  .droid-identity { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+  .droid-name { font-size: 14px; }
+  .droid-role { color: #a4b2c8; font-family: var(--font-sans); font-size: 12px; line-height: 1.4; }
+  .droid-task :global(svg) { margin-top: 3px; }
+  .task-description { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; line-height: 1.55; overflow-wrap: anywhere; }
+  .sidebar-footer { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 16px; border-top: 1px solid #243247; color: #a4b2c8; font-family: var(--font-sans); font-size: 12px; }
+  @media (max-width: 600px) {
+    .sidebar-expanded { position: absolute; inset: 0 auto 0 0; max-width: calc(100vw - 48px); box-shadow: 20px 0 60px #000b; }
   }
   .pixelated {
     image-rendering: pixelated;
