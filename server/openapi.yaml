@@ -3,11 +3,190 @@ info:
   title: The Grid Metropolis Run Settings API
   version: 0.1.0
   description: >-
-    First implemented slice of the durable-run API. Run execution endpoints remain
-    unavailable until coordinator recovery and end-to-end validation are complete.
+    Durable run persistence, authenticated snapshots and event replay, project
+    execution budgets and project/Droid access policies. Run submission is
+    disabled unless GRID_METROPOLIS_RUNS_ENABLED=true.
 servers:
   - url: http://127.0.0.1:8787
 paths:
+  /api/v1/projects/{project_id}/runs:
+    parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema: { type: string }
+      - name: Idempotency-Key
+        in: header
+        required: true
+        description: Stable key for retrying this exact run request.
+        schema: { type: string, minLength: 1, maxLength: 128 }
+    post:
+      operationId: createProjectRun
+      summary: Create and queue a policy-bound Droid run
+      description: >-
+        Creates a durable Coder -> verifier -> independent read-only Reviewer
+        run using saved project budgets and project/Droid policy intersections.
+        If reviewerDroidId is omitted, the first distinct REVISOR_DE_CODIGO in
+        the project is selected. The reviewer must have project read access and
+        must differ from the target Droid. Only server-owned verification
+        presets are accepted. Execution requires
+        GRID_METROPOLIS_RUNS_ENABLED=true; it is disabled by default.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateRunRequest' }
+      responses:
+        '202':
+          description: Run persisted and queued; poll the returned run snapshot for status.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CreateRunResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/ProjectNotFound' }
+        '422':
+          description: Invalid run request, missing distinct code Reviewer, or Reviewer lacks project read access.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+        '503': { $ref: '#/components/responses/RunExecutionDisabled' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/v1/runs/{run_id}:
+    parameters:
+      - name: run_id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      operationId: getRunSnapshot
+      summary: Read a durable run snapshot
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current persisted state and latest event cursor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunSnapshot'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/RunNotFound'
+        '503':
+          $ref: '#/components/responses/AuthNotConfigured'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/runs/{run_id}/events:
+    parameters:
+      - name: run_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: afterSequence
+        in: query
+        required: false
+        description: Exclusive replay cursor; events with sequence greater than this value are returned.
+        schema:
+          type: integer
+          format: int64
+          minimum: 0
+          default: 0
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 500
+          default: 100
+    get:
+      operationId: replayRunEvents
+      summary: Replay persisted run events in sequence order
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Ordered page of events after the exclusive sequence cursor.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RunEventsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/RunNotFound'
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '503':
+          $ref: '#/components/responses/AuthNotConfigured'
+        '500':
+          $ref: '#/components/responses/InternalError'
+  /api/v1/runs/{run_id}/permission-requests/{request_id}/decisions:
+    parameters:
+      - name: run_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: request_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: Idempotency-Key
+        in: header
+        required: true
+        description: Stable key for retrying this exact permission decision.
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 128
+    post:
+      operationId: decideRunPermission
+      summary: Persist a grant or denial for a pending permission request
+      description: >-
+        The selected decision is durable and idempotent. The run remains
+        WAITING_FOR_PERMISSION until the dispatcher acknowledges delivery to
+        app-server. A grant scope is limited to the exact requested capability,
+        action, and resource. When no live worker session is attached, the
+        decision remains durable with responseSent=false until a retry can
+        deliver it. At startup, an unsent approval is resumed only when its
+        saved item is present in an incomplete turn with no completed mutation;
+        the worker reissues the original turn and requires a matching canonical
+        action fingerprint before using the saved request ID.
+        This endpoint does not execute the operation.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PermissionDecisionRequest'
+      responses:
+        '200':
+          description: Decision recorded; responseSent indicates whether app-server acknowledged it.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionDecisionResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/PermissionNotFound'
+        '409':
+          $ref: '#/components/responses/RunConflict'
+        '422':
+          $ref: '#/components/responses/InvalidRequest'
+        '503':
+          $ref: '#/components/responses/AuthNotConfigured'
+        '500':
+          $ref: '#/components/responses/InternalError'
   /api/v1/projects/{id}/execution-settings:
     parameters:
       - name: id
@@ -63,12 +242,226 @@ paths:
           $ref: '#/components/responses/AuthNotConfigured'
         '500':
           $ref: '#/components/responses/InternalError'
+  /api/v1/projects/{project_id}/execution-policy:
+    parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getProjectExecutionPolicy
+      summary: Read a project's access ceiling
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Returns the saved policy or configured false when no policy exists.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ProjectExecutionPolicyResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/ProjectNotFound' }
+        '503': { $ref: '#/components/responses/AuthNotConfigured' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    put:
+      operationId: putProjectExecutionPolicy
+      summary: Save the project's maximum access policy
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProjectExecutionPolicy' }
+      responses:
+        '200':
+          description: Policy saved and returned.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConfiguredProjectExecutionPolicyResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/ProjectNotFound' }
+        '409': { $ref: '#/components/responses/DroidPolicyConflict' }
+        '422': { $ref: '#/components/responses/InvalidExecutionPolicy' }
+        '503': { $ref: '#/components/responses/AuthNotConfigured' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /api/v1/projects/{project_id}/droids/{droid_id}/execution-policy:
+    parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema: { type: string }
+      - name: droid_id
+        in: path
+        required: true
+        schema: { type: string }
+    get:
+      operationId: getDroidExecutionPolicy
+      summary: Read a Droid's inherited policy and overrides
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Returns explicit overrides or an empty inherited profile.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DroidExecutionPolicyResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/DroidNotFound' }
+        '503': { $ref: '#/components/responses/AuthNotConfigured' }
+        '500': { $ref: '#/components/responses/InternalError' }
+    put:
+      operationId: putDroidExecutionPolicy
+      summary: Save narrower access overrides for a Droid
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DroidExecutionPolicyOverrides' }
+      responses:
+        '200':
+          description: Overrides saved and returned.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConfiguredDroidExecutionPolicyResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/DroidNotFound' }
+        '409': { $ref: '#/components/responses/DroidPolicyConflict' }
+        '422': { $ref: '#/components/responses/InvalidExecutionPolicy' }
+        '503': { $ref: '#/components/responses/AuthNotConfigured' }
+        '500': { $ref: '#/components/responses/InternalError' }
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
   schemas:
+    ProjectExecutionPolicy:
+      type: object
+      additionalProperties: false
+      required: [readProject, writeRoots, referenceProjectIds, webSearch, shellNetwork]
+      properties:
+        readProject: { type: boolean }
+        writeRoots:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            description: Normalized project-relative path; `.` covers the project root.
+        referenceProjectIds:
+          type: array
+          uniqueItems: true
+          items: { type: string, minLength: 1 }
+        webSearch: { type: boolean, description: Web search access; separate from shell network. }
+        shellNetwork: { type: boolean, description: Network access from sandboxed shell commands. }
+    DroidExecutionPolicyOverrides:
+      type: object
+      additionalProperties: false
+      properties:
+        readProject: { type: [boolean, 'null'], default: null }
+        writeRoots:
+          type: [array, 'null']
+          uniqueItems: true
+          items: { type: string }
+          description: Null inherits project roots; an empty array denies all project writes.
+        referenceProjectIds:
+          type: [array, 'null']
+          uniqueItems: true
+          items: { type: string }
+          description: Null inherits explicitly selected projects; an empty array denies them all.
+        webSearch: { type: [boolean, 'null'], default: null }
+        shellNetwork: { type: [boolean, 'null'], default: null }
+      description: Omitted or null fields inherit; explicit values may only narrow the project ceiling.
+    ProjectExecutionPolicyResponse:
+      type: object
+      additionalProperties: false
+      required: [configured, policy]
+      properties:
+        configured: { type: boolean }
+        policy: { oneOf: [{ $ref: '#/components/schemas/ProjectExecutionPolicy' }, { type: 'null' }] }
+    ConfiguredProjectExecutionPolicyResponse:
+      type: object
+      additionalProperties: false
+      required: [configured, policy]
+      properties:
+        configured: { const: true }
+        policy: { $ref: '#/components/schemas/ProjectExecutionPolicy' }
+    DroidExecutionPolicyResponse:
+      type: object
+      additionalProperties: false
+      required: [configured, inheritsProjectPolicy, overrides]
+      properties:
+        configured: { type: boolean }
+        inheritsProjectPolicy: { type: boolean }
+        overrides: { $ref: '#/components/schemas/DroidExecutionPolicyOverrides' }
+    ConfiguredDroidExecutionPolicyResponse:
+      type: object
+      additionalProperties: false
+      required: [configured, inheritsProjectPolicy, overrides]
+      properties:
+        configured: { const: true }
+        inheritsProjectPolicy: { type: boolean, description: True when every field is still inherited. }
+        overrides: { $ref: '#/components/schemas/DroidExecutionPolicyOverrides' }
+    RunStatus:
+      type: string
+      enum: [QUEUED, PLANNING, EXECUTING, VERIFYING, REPAIRING, REVIEWING, WAITING_FOR_PERMISSION, SUCCEEDED, FAILED, BLOCKED, CANCELLED]
+    RunOutcome:
+      type: [string, 'null']
+      enum: [SUCCEEDED, FAILED, BLOCKED, BUDGET_EXHAUSTED, CANCELLED, null]
+    RunStepStatus:
+      type: string
+      enum: [PENDING, IN_PROGRESS, SUCCEEDED, FAILED, SKIPPED]
+    PermissionStatus:
+      type: string
+      enum: [PENDING, GRANTED, DENIED]
+    PermissionDecisionRequest:
+      type: object
+      additionalProperties: false
+      required: [decision]
+      properties:
+        decision:
+          type: string
+          enum: [GRANT, DENY]
+    PermissionDecisionResponse:
+      type: object
+      additionalProperties: false
+      required: [permission, responseSent, run]
+      properties:
+        permission:
+          $ref: '#/components/schemas/RunPermissionSummary'
+        responseSent:
+          type: boolean
+          description: False until the dispatcher sends and acknowledges the JSON-RPC response.
+        run:
+          $ref: '#/components/schemas/RunSnapshot'
+    CreateRunRequest:
+      type: object
+      additionalProperties: false
+      required: [targetDroidId, taskTitle, prompt, verificationPresetId]
+      properties:
+        targetDroidId: { type: string, minLength: 1 }
+        reviewerDroidId:
+          type: [string, 'null']
+          description: Optional distinct reviewer; defaults to the project's first REVISOR_DE_CODIGO droid.
+        taskTitle: { type: string, minLength: 1, maxLength: 512 }
+        prompt: { type: string, minLength: 1, maxLength: 32768 }
+        verificationPresetId:
+          type: string
+          enum: [cargo-test, npm-check]
+        budgetOverride:
+          oneOf:
+            - $ref: '#/components/schemas/RunBudgetLimits'
+            - type: 'null'
+          description: Optional per-run ceiling that may only lower project limits.
+    CreateRunResponse:
+      type: object
+      additionalProperties: false
+      required: [run, workerEnabled]
+      properties:
+        run: { $ref: '#/components/schemas/RunSnapshot' }
+        workerEnabled: { type: boolean }
     RunBudgetLimits:
       type: object
       additionalProperties: false
@@ -119,6 +512,115 @@ components:
           const: true
         budgets:
           $ref: '#/components/schemas/RunBudgetLimits'
+    RunBudgetUsage:
+      type: object
+      additionalProperties: false
+      required: [modelTurnsStarted, elapsedSeconds, reportedTokens]
+      properties:
+        modelTurnsStarted:
+          type: integer
+          format: int64
+          minimum: 0
+        elapsedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+        reportedTokens:
+          type: integer
+          format: int64
+          minimum: 0
+    RunSnapshot:
+      type: object
+      additionalProperties: false
+      required: [runId, projectId, droidIds, reviewerDroidId, idempotencyKey, taskTitle, verificationPresetId, status, terminalOutcome, budgetLimits, usage, threadId, steps, pendingPermissions, createdAt, updatedAt, completedAt, lastSequence]
+      properties:
+        runId: { type: string }
+        projectId: { type: string }
+        droidIds:
+          type: array
+          items: { type: string }
+        reviewerDroidId: { type: [string, 'null'] }
+        idempotencyKey: { type: string }
+        taskTitle: { type: string }
+        verificationPresetId: { type: string }
+        status: { $ref: '#/components/schemas/RunStatus' }
+        terminalOutcome: { $ref: '#/components/schemas/RunOutcome' }
+        budgetLimits: { $ref: '#/components/schemas/RunBudgetLimits' }
+        usage: { $ref: '#/components/schemas/RunBudgetUsage' }
+        threadId: { type: [string, 'null'] }
+        steps:
+          type: array
+          items: { $ref: '#/components/schemas/RunStep' }
+        pendingPermissions:
+          type: array
+          description: Unacknowledged approvals, including saved grant or denial choices not yet confirmed by app-server; canonical payloads are never included.
+          items: { $ref: '#/components/schemas/RunPermissionSummary' }
+        createdAt: { type: integer, format: int64 }
+        updatedAt: { type: integer, format: int64 }
+        completedAt: { type: [integer, 'null'], format: int64 }
+        lastSequence: { type: integer, format: int64, minimum: 0 }
+    RunStep:
+      type: object
+      additionalProperties: false
+      required: [stepId, runId, ordinal, stage, droidId, attempt, status, startedAt, endedAt, resultSummary, verification, appServerThreadId, appServerTurnId, appServerItemId, recoveryNextStatus, recoveryTerminalOutcome]
+      properties:
+        stepId: { type: string }
+        runId: { type: string }
+        ordinal: { type: integer, minimum: 0 }
+        stage: { type: string }
+        droidId: { type: string }
+        attempt: { type: integer, minimum: 1 }
+        status: { $ref: '#/components/schemas/RunStepStatus' }
+        startedAt: { type: [integer, 'null'], format: int64 }
+        endedAt: { type: [integer, 'null'], format: int64 }
+        resultSummary: { type: [string, 'null'] }
+        verification: { type: [object, 'null'] }
+        appServerThreadId: { type: [string, 'null'] }
+        appServerTurnId: { type: [string, 'null'] }
+        appServerItemId: { type: [string, 'null'] }
+        recoveryNextStatus: { oneOf: [{ $ref: '#/components/schemas/RunStatus' }, { type: 'null' }] }
+        recoveryTerminalOutcome: { oneOf: [{ $ref: '#/components/schemas/RunOutcome' }, { type: 'null' }] }
+    RunPermissionSummary:
+      type: object
+      additionalProperties: false
+      required: [requestId, stepId, droidId, capability, action, resource, rationale, status, alternativeIndex, createdAt, payloadFingerprint]
+      properties:
+        requestId: { type: string }
+        stepId: { type: [string, 'null'] }
+        droidId: { type: string }
+        capability: { type: string }
+        action: { type: string }
+        resource: { type: string }
+        rationale: { type: string }
+        status: { $ref: '#/components/schemas/PermissionStatus' }
+        alternativeIndex: { type: integer, minimum: 0 }
+        createdAt: { type: integer, format: int64 }
+        payloadFingerprint: { type: string }
+    RunEvent:
+      type: object
+      additionalProperties: false
+      required: [runId, sequence, eventType, timestamp, projectId, stepId, droidId, attempt, payload]
+      properties:
+        runId: { type: string }
+        sequence: { type: integer, format: int64, minimum: 1 }
+        eventType: { type: string }
+        timestamp: { type: integer, format: int64 }
+        projectId: { type: string }
+        stepId: { type: [string, 'null'] }
+        droidId: { type: [string, 'null'] }
+        attempt: { type: [integer, 'null'], minimum: 1 }
+        payload: { type: object }
+    RunEventsResponse:
+      type: object
+      additionalProperties: false
+      required: [runId, events, nextSequence, hasMore]
+      properties:
+        runId: { type: string }
+        events:
+          type: array
+          items: { $ref: '#/components/schemas/RunEvent' }
+        nextSequence: { type: integer, format: int64, minimum: 0 }
+        hasMore: { type: boolean }
     ErrorEnvelope:
       type: object
       additionalProperties: false
@@ -148,8 +650,46 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorEnvelope'
+    RunExecutionDisabled:
+      description: Run execution is disabled unless GRID_METROPOLIS_RUNS_ENABLED is true.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
     ProjectNotFound:
       description: No project exists with this ID.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    DroidNotFound:
+      description: The project or Droid does not exist.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    InvalidExecutionPolicy:
+      description: Policy contains an invalid project-relative path, duplicate, or unknown reference project.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    DroidPolicyConflict:
+      description: The change would make a saved Droid policy broader than the project policy.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    RunNotFound:
+      description: No run exists with this ID.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    PermissionNotFound:
+      description: No permission request with this ID belongs to the specified run.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorEnvelope'
+    RunConflict:
+      description: The run is in an incompatible state or the decision conflicts with a prior decision.
       content:
         application/json:
           schema:
